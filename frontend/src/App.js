@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Users } from 'lucide-react';
+import { Search, Users, Swords } from 'lucide-react';
 import PokemonList from './Components/PokemonList';
 import Team from './Components/Team';
 import BattleSimulator from './Components/BattleSimulator';
@@ -51,6 +51,17 @@ function App() {
             <span>My Team</span>
             <span className="tab-count">{team.length}/6</span>
           </button>
+
+          <button
+            className={`tab-btn ${activeTab === 'battle' ? 'active' : ''}`}
+            onClick={() => setActiveTab('battle')}
+            role="tab"
+            aria-selected={activeTab === 'battle'}
+          >
+            {activeTab === 'battle' && <motion.span layoutId="tab-pill" className="tab-indicator" transition={{ type: 'spring', stiffness: 380, damping: 30 }} />}
+            <Swords size={16} className="tab-icon" />
+            <span>Battle Arena</span>
+          </button>
         </div>
 
         <AnimatePresence mode="wait">
@@ -63,9 +74,10 @@ function App() {
           >
             {activeTab === 'browse' ? (
               <PokemonList team={team} setTeam={setTeam} />
+            ) : activeTab === 'team' ? (
+              <Team team={team} setTeam={setTeam} />
             ) : (
-              <div className="team-view">
-                <Team team={team} setTeam={setTeam} />
+              <div className="battle-page">
                 <BattleSimulator team={team} />
               </div>
             )}
