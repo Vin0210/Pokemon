@@ -42046,6 +42046,130 @@
       },
       "timestamp": "2026-08-29T12:00:39.972Z",
       "id": "MSGMpqq"
+    },
+    {
+      "pokemon1": {
+        "id": 249,
+        "name": "lugia",
+        "image": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/249.png",
+        "types": [
+          "psychic",
+          "flying"
+        ],
+        "stats": [
+          {
+            "name": "hp",
+            "base": 106
+          },
+          {
+            "name": "attack",
+            "base": 90
+          },
+          {
+            "name": "defense",
+            "base": 130
+          },
+          {
+            "name": "special-attack",
+            "base": 90
+          },
+          {
+            "name": "special-defense",
+            "base": 154
+          },
+          {
+            "name": "speed",
+            "base": 110
+          }
+        ],
+        "abilities": [
+          "pressure",
+          "multiscale"
+        ],
+        "category": "Legendary",
+        "height": 52,
+        "weight": 2160
+      },
+      "pokemon2": {
+        "id": 9,
+        "name": "blastoise",
+        "image": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/9.png",
+        "stats": [
+          {
+            "name": "hp",
+            "base": 79
+          },
+          {
+            "name": "attack",
+            "base": 83
+          },
+          {
+            "name": "defense",
+            "base": 100
+          },
+          {
+            "name": "special-attack",
+            "base": 85
+          },
+          {
+            "name": "special-defense",
+            "base": 105
+          },
+          {
+            "name": "speed",
+            "base": 78
+          }
+        ],
+        "types": [
+          "water"
+        ],
+        "back": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/sprites/pokemon/other/official-artwork/9.png",
+        "front": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/9.png"
+      },
+      "winner": {
+        "id": 249,
+        "name": "lugia",
+        "image": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/249.png",
+        "types": [
+          "psychic",
+          "flying"
+        ],
+        "stats": [
+          {
+            "name": "hp",
+            "base": 106
+          },
+          {
+            "name": "attack",
+            "base": 90
+          },
+          {
+            "name": "defense",
+            "base": 130
+          },
+          {
+            "name": "special-attack",
+            "base": 90
+          },
+          {
+            "name": "special-defense",
+            "base": 154
+          },
+          {
+            "name": "speed",
+            "base": 110
+          }
+        ],
+        "abilities": [
+          "pressure",
+          "multiscale"
+        ],
+        "category": "Legendary",
+        "height": 52,
+        "weight": 2160
+      },
+      "timestamp": "2026-08-29T12:21:03.010Z",
+      "id": "P0YxhHH"
     }
   ],
   "favorites": []
