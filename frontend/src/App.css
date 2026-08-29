@@ -887,6 +887,159 @@ a{color:inherit;text-decoration:none}
 .pm-foot{ display:flex; gap:6px; flex-wrap:wrap; margin-top:4px; font-size:.62rem; font-weight:800; color:var(--muted)}
 .pm-type{ color:#fff; padding:1px 6px; border-radius:999px; font-size:.56rem; font-weight:900; letter-spacing:.06em; text-transform:uppercase; border:1px solid rgba(255,255,255,.18)}
 
+/* ============ RESPONSIVE FIXES ============ */
+@media(max-width: 980px){
+  .team-view{ gap:12px }
+}
+@media(max-width: 860px){
+  .draft-stage{ grid-template-columns:1fr; gap:12px }
+  .vs-column{ position:static; top:auto; order:2 }
+  .draft-panel{ min-height:auto }
+  .battle-field{ gap:10px }
+}
+@media(max-width: 768px){
+  .main-container{ width:min(1280px, calc(100% - 20px)); padding:12px 0 28px }
+  .header-inner{ padding:10px 0; gap:8px; flex-wrap:wrap }
+  .brand{ gap:10px }
+  .brand-mark{ width:36px; height:36px; border-radius:10px }
+  .brand-text h1{ font-size:1.08rem }
+  .brand-text p{ display:none }
+  .header-actions{ gap:6px; flex-wrap:wrap }
+  .header-actions .pill{ padding:6px 9px; font-size:.74rem }
+  .header-actions .pill:nth-child(2){ display:none }
+  .tabs-wrap{ width:100%; justify-content:stretch; padding:4px }
+  .tab-btn{ flex:1; justify-content:center; padding:9px 10px; font-size:.84rem }
+  .filters-card{ padding:10px; gap:8px }
+  .search-wrap{ min-width:0; max-width:none; flex:1 1 100% }
+  .search-input{ height:40px; font-size:.88rem }
+  .chip{ height:32px; padding:0 10px; font-size:.76rem }
+  .count-badge{ width:100%; justify-content:center; font-size:.76rem }
+  .pokemon-grid{ gap:12px; margin-top:12px }
+  .card-top{ padding:10px 10px 0 }
+  .pokemon-image-container{ height:122px; padding:4px 0 6px }
+  .pokemon-image{ width:96px; height:96px }
+  .card-content{ padding:10px 10px 12px; gap:8px }
+  .pokemon-name{ font-size:.95rem }
+  .card-stats{ padding:6px; gap:4px }
+  .btn{ height:36px; font-size:.82rem }
+  .team-members{ gap:8px }
+  .team-member{ padding:10px }
+  .team-member img{ width:72px; height:72px }
+  .battle-stage{ padding:10px 8px 8px }
+  .sprite-wrap.realistic{ height:118px }
+  .battle-sprite{ width:88px; height:88px }
+  .hp-card.classic{ padding:6px 8px }
+  .hp-name{ font-size:.82rem }
+  .battle-log.realistic-log{ min-height:52px; padding:8px 10px; font-size:.82rem }
+  .main-menu-grid{ gap:6px }
+  .main-menu-btn{ height:48px; font-size:.82rem }
+  .moves-grid{ gap:6px }
+  .move-btn{ padding:8px }
+  .draft-panel{ padding:10px }
+  .picked-head img{ width:48px; height:48px }
+}
+@media(max-width: 640px){
+  .pokemon-grid{ grid-template-columns:repeat(2, minmax(0,1fr)); gap:10px }
+  .team-view{ gap:10px }
+  .team-members{ grid-template-columns:repeat(2, minmax(0,1fr)); gap:8px }
+  .fighter-grid{ grid-template-columns:repeat(2, minmax(0,1fr)); gap:8px }
+  .wild-grid{ grid-template-columns:repeat(2, minmax(0,1fr)); gap:8px }
+  .fighter-img{ height:84px }
+  .fighter-img img{ width:68px; height:68px }
+  .wild-img{ height:78px }
+  .wild-img img{ width:64px; height:64px }
+  .battle-field{ grid-template-columns:1fr; gap:8px }
+  .battle-divider{ order:2; padding:4px 0 }
+  .combatant.player{ order:3 }
+  .vs-mini{ width:32px; height:32px; font-size:.70rem }
+  .hp-bar-classic{ gap:4px }
+  .modal-overlay{ padding:10px }
+  .modal-content{ border-radius:18px; max-height:92vh }
+  .pokemon-detail-container{ gap:0 }
+  .pokemon-detail-image{ width:180px; height:180px }
+  .stats-container{ gap:8px }
+}
+@media(max-width: 480px){
+  .main-container{ width:calc(100% - 16px) }
+  .header-inner{ gap:6px }
+  .brand-text h1{ font-size:1rem }
+  .header-actions{ display:none }
+  .tabs-wrap{ gap:4px; padding:4px }
+  .tab-btn{ padding:8px 10px; font-size:.80rem; gap:6px }
+  .filters-card{ border-radius:16px }
+  .filter-pills{ gap:6px }
+  .chip{ height:30px; padding:0 9px; font-size:.72rem }
+  .pokemon-grid{ grid-template-columns:1fr 1fr; gap:8px }
+  .pokemon-card{ border-radius:16px }
+  .card-top{ padding:8px 8px 0 }
+  .pokemon-image-container{ height:108px }
+  .pokemon-image{ width:82px; height:82px }
+  .pokemon-name{ font-size:.88rem }
+  .pokemon-types .type-badge{ padding:3px 7px; font-size:.60rem }
+  .card-stats{ border-radius:10px; padding:6px }
+  .mini-stat b{ font-size:.74rem }
+  .mini-stat span{ font-size:.60rem }
+  .pagination{ gap:6px; margin:16px 0 4px }
+  .pagination-button{ min-width:36px; height:36px; padding:0 10px; font-size:.82rem }
+  .team-members{ grid-template-columns:1fr 1fr; gap:8px }
+  .fighter-grid{ grid-template-columns:1fr 1fr; gap:8px }
+  .wild-grid{ grid-template-columns:1fr 1fr; gap:8px }
+  .fighter-card{ border-radius:14px }
+  .fighter-name{ font-size:.82rem }
+  .wild-name{ font-size:.78rem }
+  .picked-moves-grid{ grid-template-columns:1fr }
+  .draft-head h3{ font-size:.88rem }
+  .draft-head p{ font-size:.68rem }
+  .vs-column{ gap:10px }
+  .matchup-card{ padding:8px }
+  .battle-stage{ padding:8px 6px 6px }
+  .sprite-wrap.realistic{ height:102px }
+  .battle-sprite{ width:76px; height:76px }
+  .hp-card.classic{ padding:6px 7px; border-radius:10px }
+  .hp-name{ font-size:.78rem }
+  .hp-num{ font-size:.66rem }
+  .battle-log.realistic-log{ font-size:.78rem; min-height:48px; padding:8px 10px }
+  .main-menu-grid{ grid-template-columns:1fr 1fr; gap:6px }
+  .main-menu-btn{ height:46px; font-size:.78rem }
+  .main-menu-btn small{ display:none }
+  .moves-grid{ grid-template-columns:1fr; gap:6px }
+  .move-btn{ padding:8px 9px }
+  .move-name{ font-size:.82rem }
+  .modal-header{ padding:12px 12px 10px }
+  .pokemon-detail-name{ font-size:1.25rem }
+  .physical-stat{ padding:8px 6px }
+  .physical-value{ font-size:.92rem }
+}
+@media(max-width: 360px){
+  .pokemon-grid{ gap:8px }
+  .fighter-grid, .wild-grid{ grid-template-columns:1fr; }
+  .team-members{ grid-template-columns:1fr; }
+  .tabs-wrap{ flex-direction:column; border-radius:16px; width:100% }
+  .tab-btn{ width:100%; border-radius:12px }
+  .search-input{ height:38px; padding:0 12px 0 36px; font-size:.84rem }
+}
+.picked-detail{ background:var(--surface-2); border:1px solid var(--line); border-radius:14px; padding:10px; display:flex; flex-direction:column; gap:10px}
+.picked-detail.small{ padding:8px}
+.picked-head{ display:flex; gap:10px; align-items:center}
+.picked-head img{ width:56px; height:56px; object-fit:contain; background:#fff; border:1px solid var(--line); border-radius:12px; padding:4px}
+.picked-head h4{ font-weight:900; text-transform:capitalize; font-size:.88rem}
+.picked-head h4 span{ display:block; font-size:.70rem; font-weight:700; color:var(--muted); text-transform:none; letter-spacing:.02em}
+.picked-bars{ display:grid; gap:4px; margin-top:6px}
+.picked-bar{ display:grid; grid-template-columns:32px 1fr 36px; gap:6px; align-items:center; font-size:.68rem; font-weight:800}
+.picked-bar span{ color:var(--muted); text-transform:uppercase; letter-spacing:.06em; font-size:.62rem}
+.picked-bar .bar{ height:6px; background:#e2e8f0; border-radius:999px; overflow:hidden}
+.picked-bar .bar div{ height:100%; border-radius:999px}
+.picked-bar b{ text-align:right; font-variant-numeric:tabular-nums}
+.picked-moves h5{ font-size:.72rem; font-weight:900; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); display:flex; align-items:center; gap:6px; margin-bottom:6px}
+.picked-moves-grid{ display:grid; grid-template-columns:1fr 1fr; gap:6px}
+@media(max-width:520px){ .picked-moves-grid{ grid-template-columns:1fr } }
+.picked-move{ background:#fff; border:1.5px solid var(--line); border-radius:12px; padding:6px 8px}
+.pm-head{ display:flex; align-items:center; justify-content:space-between; gap:6px}
+.pm-name{ font-weight:900; font-size:.76rem; text-transform:capitalize}
+.pm-cat{ font-size:.58rem; font-weight:900; letter-spacing:.06em; background:var(--surface-2); border:1px solid var(--line); padding:1px 6px; border-radius:999px}
+.pm-foot{ display:flex; gap:6px; flex-wrap:wrap; margin-top:4px; font-size:.62rem; font-weight:800; color:var(--muted)}
+.pm-type{ color:#fff; padding:1px 6px; border-radius:999px; font-size:.56rem; font-weight:900; letter-spacing:.06em; text-transform:uppercase; border:1px solid rgba(255,255,255,.18)}
+
 /* ============ CONFETTI / GAME DIALOG ============ */
 .confetti-container{position:fixed;inset:0;pointer-events:none;z-index:50;overflow:hidden}
 .confetti{position:absolute;top:-10px;width:10px;height:14px;border-radius:2px;opacity:.9}
