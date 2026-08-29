@@ -653,8 +653,10 @@ const BattleSimulator = ({ team }) => {
               {team.map(p=>{
                 const hp=calcHP(p.stats?.find(s=>s.name==='hp')?.base||55);
                 const spd=getStat(p,'speed');
+                const sel = pokemon1?.id===p.id;
                 return (
-                  <motion.button key={p.id} onClick={()=>setPokemon1(p)} className="fighter-card wizard-card" whileHover={{y:-2}} whileTap={{scale:.98}} style={{borderColor: typeColor(p.types[0])}}>
+                  <motion.button key={p.id} onClick={()=>setPokemon1(prev=> prev?.id===p.id ? null : p)} className={`fighter-card wizard-card ${sel?'selected':''}`} whileHover={{y:-2}} whileTap={{scale:.98}} style={{borderColor: sel ? typeColor(p.types[0]) : undefined}}>
+                    {sel && <span className="select-check">✓</span>}
                     <div className="fighter-img" style={{background:`radial-gradient(220px 120px at 50% 20%, ${typeColor(p.types[0])}18, transparent 70%), linear-gradient(180deg, #fff, #f8fafc)`}}>
                       <img src={p.image} alt={p.name} />
                       <span className="card-num">#{String(p.id).padStart(4,'0')}</span>
@@ -664,7 +666,7 @@ const BattleSimulator = ({ team }) => {
                       <div className="fighter-types">{p.types.map(t=><span key={t} className={`type-badge type-${t}`} style={{fontSize:'.54rem', padding:'2px 6px'}}>{t}</span>)}</div>
                       <div className="fighter-stats"><span><Heart size={10}/> {hp} HP</span><span><Zap size={10}/> {spd} SPD</span></div>
                     </div>
-                    <div className="pick-cta">Tap to pick <ChevronRight size={12}/></div>
+                    <div className="pick-cta">{sel ? 'Selected — tap to deselect' : 'Tap to pick'} <ChevronRight size={12}/></div>
                   </motion.button>
                 );
               })}
@@ -684,6 +686,7 @@ const BattleSimulator = ({ team }) => {
             </div>
             <button className="btn-refresh small" onClick={()=>setPokemon1(null)}><X size={12}/> Change</button>
           </div>
+          <button className="btn-refresh" onClick={()=>setPokemon1(null)} style={{alignSelf:'flex-start', marginBottom:4}}><ChevronRight size={12} style={{transform:'rotate(180deg)'}}/> Back to fighter</button>
 
           <div className="wizard-head" style={{marginTop:14}}>
             <h3>{battleMode==='wild' ? <><Zap size={16}/> Step 2 — Choose wild opponent</> : <><Swords size={16}/> Step 2 — Choose team foe</>}</h3>
@@ -700,16 +703,18 @@ const BattleSimulator = ({ team }) => {
                 {wildPokemon.map(w=>{
                   const hp=calcHP(w.stats?.find(s=>s.name==='hp')?.base||55);
                   const rarity=getRarity(w);
+                  const sel = pokemon2?.id===w.id;
                   return (
-                    <motion.button key={w.id} onClick={()=>setPokemon2(w)} className="wild-card wizard-card" whileHover={{y:-2}} whileTap={{scale:.98}} style={{borderColor: typeColor(w.types[0])}}>
+                    <motion.button key={w.id} onClick={()=>setPokemon2(prev=> prev?.id===w.id ? null : w)} className={`wild-card wizard-card ${sel?'selected':''}`} whileHover={{y:-2}} whileTap={{scale:.98}} style={{borderColor: sel ? typeColor(w.types[0]) : undefined}}>
                       <span className="rarity" style={{background: rarity.bg, color: rarity.color, borderColor: rarity.color}}>{rarity.label}</span>
+                      {sel && <span className="select-check">✓</span>}
                       <div className="wild-img" style={{background:`radial-gradient(180px 90px at 50% 18%, ${typeColor(w.types[0])}18, transparent 70%)`}}>
                         <img src={w.image} alt={w.name} />
                       </div>
                       <div className="wild-name">{w.name} <span>Lv.50</span></div>
                       <div className="wild-types">{w.types.map(t=><span key={t} className={`type-badge type-${t}`} style={{fontSize:'.52rem', padding:'2px 6px'}}>{t}</span>)}</div>
                       <div className="wild-stats"><span>{hp} HP</span><span>{getStat(w,'speed')} SPD</span></div>
-                      <div className="pick-cta">Challenge <ChevronRight size={12}/></div>
+                      <div className="pick-cta">{sel ? 'Selected — tap to deselect' : 'Challenge'} <ChevronRight size={12}/></div>
                     </motion.button>
                   );
                 })}
@@ -719,15 +724,17 @@ const BattleSimulator = ({ team }) => {
             <div className="fighter-grid wizard-grid">
               {team.filter(p=> p.id!==pokemon1.id).map(p=>{
                 const hp=calcHP(p.stats?.find(s=>s.name==='hp')?.base||55);
+                const sel = pokemon2?.id===p.id;
                 return (
-                  <motion.button key={p.id} onClick={()=>setPokemon2(p)} className="fighter-card wizard-card" whileHover={{y:-2}} whileTap={{scale:.98}} style={{borderColor: typeColor(p.types[0])}}>
+                  <motion.button key={p.id} onClick={()=>setPokemon2(prev=> prev?.id===p.id ? null : p)} className={`fighter-card wizard-card ${sel?'selected':''}`} whileHover={{y:-2}} whileTap={{scale:.98}} style={{borderColor: sel ? typeColor(p.types[0]) : undefined}}>
+                    {sel && <span className="select-check">✓</span>}
                     <div className="fighter-img"><img src={p.image} alt={p.name}/><span className="card-num">#{String(p.id).padStart(4,'0')}</span></div>
                     <div className="fighter-body">
                       <div className="fighter-name">{p.name}</div>
                       <div className="fighter-types">{p.types.map(t=><span key={t} className={`type-badge type-${t}`} style={{fontSize:'.54rem', padding:'2px 6px'}}>{t}</span>)}</div>
                       <div className="fighter-stats"><span><Heart size={10}/> {hp} HP</span><span>{getStat(p,'speed')} SPD</span></div>
                     </div>
-                    <div className="pick-cta">Challenge <ChevronRight size={12}/></div>
+                    <div className="pick-cta">{sel ? 'Selected — tap to deselect' : 'Challenge'} <ChevronRight size={12}/></div>
                   </motion.button>
                 );
               })}
@@ -736,7 +743,10 @@ const BattleSimulator = ({ team }) => {
               )}
             </div>
           )}
-          <button className="btn-refresh" onClick={()=>setPokemon2(null)} disabled={!pokemon2} style={{marginTop:10, opacity: pokemon2?1:.5}}><X size={12}/> Clear opponent</button>
+          <div style={{display:'flex', gap:8, marginTop:10, flexWrap:'wrap'}}>
+            <button className="btn-refresh" onClick={()=>setPokemon1(null)}><ChevronRight size={12} style={{transform:'rotate(180deg)'}}/> Back</button>
+            <button className="btn-refresh" onClick={()=>setPokemon2(null)} disabled={!pokemon2} style={{opacity: pokemon2?1:.5}}><X size={12}/> Clear opponent</button>
+          </div>
         </div>
       )}
 
