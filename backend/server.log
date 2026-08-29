@@ -1,0 +1,9 @@
+Server running on http://localhost:3001
+Test DELETE with: curl -X DELETE http://localhost:3001/team/22
+[0mGET /team [32m200[0m 34.153 ms - 2971[0m
+[0mGET /team [32m200[0m 20.268 ms - 2971[0m
+[0mPOST /team [32m201[0m 49.984 ms - 194[0m
+[0mGET /team [32m200[0m 7.885 ms - 3193[0m
+DELETE success: Removed Pokémon 999
+[0mDELETE /team/999 [32m200[0m 12.813 ms - 21[0m
+[0mGET /team [32m200[0m 19.922 ms - 2971[0m
