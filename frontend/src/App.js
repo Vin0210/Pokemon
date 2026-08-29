@@ -84,6 +84,18 @@ function App() {
           </motion.div>
         </AnimatePresence>
       </div>
+
+      <nav className="bottom-nav" aria-label="Mobile navigation">
+        <button className={activeTab==='browse'?'active':''} onClick={()=>setActiveTab('browse')} aria-label="Discover">
+          <Search size={18} /> Discover
+        </button>
+        <button className={activeTab==='team'?'active':''} onClick={()=>setActiveTab('team')} aria-label={`My Team ${team.length} of 6`}>
+          <Users size={18} /> Team {team.length>0 && <span className="nav-badge">{team.length}</span>}
+        </button>
+        <button className={activeTab==='battle'?'active':''} onClick={()=>setActiveTab('battle')} aria-label="Battle Arena">
+          <Swords size={18} /> Battle
+        </button>
+      </nav>
     </div>
   );
 }

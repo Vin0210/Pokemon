@@ -1422,6 +1422,51 @@ img{ max-width:100%; height:auto }
 * { min-width:0 }
 .tabs-wrap, .filter-pills, .fighter-grid, .wild-grid, .team-members, .pokemon-grid, .moves-grid, .main-menu-grid, .picked-moves-grid{ min-width:0; overflow-wrap:anywhere }
 
+/* Fluid typography & tap friendliness */
+html{ font-size:clamp(13px, 0.85vw + 11px, 16px) }
+button, a, [role="button"]{ touch-action:manipulation; -webkit-tap-highlight-color:transparent }
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible{ outline:2px solid var(--secondary); outline-offset:2px; border-radius:999px }
+@media(prefers-reduced-motion:reduce){ *, *::before, *::after{ animation-duration:.01ms !important; transition-duration:.01ms !important } }
+
+/* Bottom nav (thumb-friendly on phones) */
+.bottom-nav{
+  display:none; position:fixed; left:0; right:0; bottom:0; z-index:45;
+  background:rgba(255,255,255,.96); backdrop-filter:blur(16px) saturate(180%);
+  border-top:1px solid rgba(226,232,240,.9); box-shadow:0 -8px 24px rgba(15,23,42,.08);
+  padding:6px 6px calc(6px + env(safe-area-inset-bottom)); gap:6px;
+}
+.bottom-nav button{
+  flex:1; height:52px; border-radius:14px; border:1px solid transparent; background:transparent;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;
+  font-weight:800; font-size:.72rem; color:var(--muted); cursor:pointer; position:relative;
+}
+.bottom-nav button.active{ background:var(--text); color:#fff; border-color:var(--text); box-shadow:0 6px 16px rgba(15,23,42,.18)}
+.bottom-nav button .nav-badge{
+  position:absolute; top:4px; right:18px; background:var(--primary); color:#0f172a; font-size:.62rem; font-weight:900;
+  padding:1px 5px; border-radius:999px; border:1px solid #eab308; min-width:18px; text-align:center;
+}
+.bottom-nav button.active .nav-badge{ background:#fff; color:var(--text); border-color:#fff}
+@media(max-width:768px){
+  .bottom-nav{ display:flex }
+  .tabs-wrap{ display:none }
+  .main-container{ padding-bottom:calc(72px + env(safe-area-inset-bottom)) }
+  .header{ position:sticky }
+}
+@media(min-width:769px){ .bottom-nav{ display:none !important } }
+
+/* Landscape phones */
+@media(max-height:500px) and (orientation:landscape){
+  .header-inner{ padding:8px 0 }
+  .main-container{ padding:10px 0 16px }
+  .bottom-nav{ padding:4px 6px calc(4px + env(safe-area-inset-bottom)) }
+  .bottom-nav button{ height:44px; flex-direction:row; gap:6px; font-size:.74rem }
+}
+
+/* High-contrast & large text */
+@media(prefers-contrast:more){
+  .pokemon-card, .team-member, .fighter-card, .wild-card, .squad-card{ border-width:2px }
+}
+
 /* ============ UTIL ============ */
 .row{display:flex;align-items:center;gap:8px}
 .hidden{display:none!important}
