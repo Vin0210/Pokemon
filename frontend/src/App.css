@@ -527,10 +527,10 @@ a{color:inherit;text-decoration:none}
 @keyframes releaseToBall{
   0%{ transform:scale(1) translateY(0); opacity:1; filter:blur(0) brightness(1) }
   30%{ transform:scale(1.04) translateY(-4px); opacity:1 }
-  58%{ transform:scale(0.72) translateY(-18px); opacity:.9; filter:blur(1px) brightness(1.15) }
-  100%{ transform:scale(0.08) translateY(-42px); opacity:0; filter:blur(6px) brightness(1.6) }
+  58%{ transform:scale(0.72) translateY(-18px); opacity:.9; filter:brightness(1.15) }
+  100%{ transform:scale(0.08) translateY(-42px); opacity:0; filter:brightness(1.4) }
 }
-.release-overlay{ position:absolute; inset:0; display:grid; place-items:center; background:radial-gradient(300px 180px at 50% 38%, rgba(255,203,5,.18), transparent 70%), linear-gradient(180deg, rgba(255,255,255,.88), rgba(248,250,252,.92)); backdrop-filter:blur(1px); border-radius:16px; z-index:2; overflow:hidden}
+.release-overlay{ position:absolute; inset:0; display:grid; place-items:center; background:radial-gradient(300px 180px at 50% 38%, rgba(255,203,5,.14), transparent 70%), linear-gradient(180deg, rgba(255,255,255,.96), rgba(248,250,252,.98)); border-radius:16px; z-index:2; overflow:hidden}
 .release-beam{
   position:absolute; left:50%; top:18%; width:2px; height:72%; background:linear-gradient(180deg, transparent, #ffcb05, #fff); transform:translateX(-50%) scaleY(0); transform-origin:top; box-shadow:0 0 12px #ffcb05, 0 0 22px #ffcb05; opacity:.85; border-radius:999px;
 }
@@ -565,7 +565,7 @@ a{color:inherit;text-decoration:none}
   padding:5px 10px; border-radius:999px; border:1px solid rgba(255,255,255,.12); box-shadow:0 6px 16px rgba(15,23,42,.18);
   display:flex; align-items:center; gap:6px; white-space:nowrap;
 }
-.releasing-dim{ position:fixed; inset:0; background:rgba(15,23,42,.18); backdrop-filter:blur(2px); z-index:5; pointer-events:auto}
+.releasing-dim{ position:fixed; inset:0; background:rgba(15,23,42,.08); z-index:5; pointer-events:auto}
 .member-platform{ position:absolute; bottom:6px; left:50%; transform:translateX(-50%); width:64%; height:10px; background:radial-gradient(ellipse at center, rgba(15,23,42,.18) 0%, transparent 68%); border-radius:50%; pointer-events:none}
 .empty-team{
   margin-top:16px;background:var(--surface-2);border:1.5px dashed var(--line);border-radius:18px;
