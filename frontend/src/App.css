@@ -1206,6 +1206,146 @@ a{color:inherit;text-decoration:none}
   padding:12px 14px;border-radius:14px;font-weight:700;margin-top:14px;
 }
 
+/* ============ ULTIMATE RESPONSIVE (all devices) ============ */
+html, body{ overflow-x:hidden; max-width:100vw }
+img{ max-width:100%; height:auto }
+.main-container, .header-inner{ max-width:100% }
+
+/* 1280+ : default is fine */
+
+/* ≤1024px : tablet landscape */
+@media(max-width:1024px){
+  .main-container{ width:min(100% - 24px, 1280px); padding:16px 0 32px }
+  .pokemon-grid{ grid-template-columns:repeat(3, minmax(0,1fr)); gap:14px }
+  .draft-stage{ gap:12px }
+  .team-view{ gap:12px }
+  .battle-page .battle-simulator{ min-height:560px }
+}
+
+/* ≤768px : tablet portrait - major reflow */
+@media(max-width:768px){
+  html{ font-size:15px }
+  .header{ backdrop-filter:blur(12px) saturate(160%) }
+  .header-inner{ flex-wrap:wrap; gap:10px }
+  .tabs-wrap{ width:100%; overflow-x:auto; scrollbar-width:none; -webkit-overflow-scrolling:touch; flex-wrap:nowrap }
+  .tabs-wrap::-webkit-scrollbar{ display:none }
+  .tab-btn{ flex:0 0 auto; white-space:nowrap }
+  .filters-card{ flex-direction:column; align-items:stretch }
+  .filters-left{ width:100% }
+  .search-wrap{ max-width:none; min-width:0 }
+  .count-badge{ justify-content:center; text-align:center }
+  .skeleton-grid{ grid-template-columns:repeat(2, minmax(0,1fr)) }
+  .pokemon-detail-container{ grid-template-columns:1fr }
+  .team-summary{ flex-direction:column }
+  .summary-chip{ min-width:0; width:100% }
+  .battle-page .realistic-stage{ padding:10px 8px }
+}
+
+/* ≤640px : large phone */
+@media(max-width:640px){
+  html{ font-size:14.5px }
+  .main-container{ width:calc(100% - 16px); padding:12px 0 24px }
+  .pokemon-grid{ grid-template-columns:repeat(2, minmax(0,1fr)); gap:10px }
+  .skeleton-grid{ grid-template-columns:repeat(2, minmax(0,1fr)); gap:10px }
+  .team-members{ grid-template-columns:repeat(2, minmax(0,1fr)) }
+  .fighter-grid, .wild-grid{ grid-template-columns:repeat(2, minmax(0,1fr)) }
+  .battle-history li{ flex-direction:column; align-items:flex-start; gap:4px }
+  .battle-history .battle-time{ margin-left:0 }
+  .modal-overlay{ padding:12px; align-items:flex-start; padding-top:12px }
+  .modal-content{ width:100%; max-height:94vh; border-radius:18px }
+  .pokemon-detail-image{ width:160px; height:160px }
+  .stat-bar{ grid-template-columns:52px 1fr 32px }
+}
+
+/* ≤480px : phone */
+@media(max-width:480px){
+  html{ font-size:14px }
+  .main-container{ width:calc(100% - 12px); padding:10px 0 20px }
+  .header-inner{ padding:8px 0 }
+  .brand{ gap:8px }
+  .brand-mark{ width:34px; height:34px; border-radius:10px }
+  .brand-text h1{ font-size:.98rem }
+  .pill{ padding:6px 8px; font-size:.72rem; gap:6px }
+  .tabs-wrap{ padding:4px; gap:4px; border-radius:18px }
+  .tab-btn{ padding:8px 10px; font-size:.78rem; gap:6px }
+  .filters-card{ padding:10px; border-radius:16px; gap:8px }
+  .chip{ height:30px; padding:0 10px; font-size:.72rem }
+  .pokemon-grid{ grid-template-columns:1fr 1fr; gap:8px }
+  .pokemon-card{ border-radius:16px }
+  .card-top{ padding:8px 8px 0 }
+  .pokemon-image-container{ height:102px }
+  .pokemon-image{ width:78px; height:78px }
+  .card-content{ padding:8px 9px 10px; gap:6px }
+  .pokemon-name{ font-size:.84rem }
+  .card-stats{ gap:4px; padding:6px; border-radius:10px }
+  .card-buttons{ gap:6px }
+  .btn{ height:34px; font-size:.78rem; gap:5px }
+  .info-button{ flex:0 0 36px; width:36px }
+  .team-members{ grid-template-columns:1fr 1fr; gap:8px }
+  .team-member{ padding:8px; border-radius:14px }
+  .team-member img{ width:64px; height:64px }
+  .draft-panel{ padding:8px; border-radius:14px; min-height:auto }
+  .fighter-img{ height:76px }
+  .fighter-img img{ width:60px; height:60px }
+  .wild-img{ height:68px }
+  .wild-img img{ width:56px; height:56px }
+  .vs-column{ gap:8px }
+  .vs-ring{ height:64px }
+  .matchup-card{ padding:8px }
+  .battle-stage{ padding:8px 6px 6px }
+  .sprite-wrap.realistic{ height:100px }
+  .battle-sprite{ width:72px; height:72px }
+  .hp-card{ padding:6px 8px; border-radius:12px }
+  .battle-log{ padding:8px 10px; min-height:48px; font-size:.78rem }
+  .moves-grid{ gap:6px }
+  .move-btn{ padding:7px 8px; border-radius:12px }
+  .battle-controls{ padding:8px }
+  .main-menu-grid{ gap:6px }
+  .main-menu-btn{ height:44px; font-size:.78rem }
+  .picked-head{ flex-direction:column; text-align:center }
+  .picked-head img{ width:44px; height:44px }
+  .picked-bars{ width:100% }
+  .battle-arena-head{ flex-wrap:wrap; gap:6px; padding:8px }
+  .battle-arena-head .pill{ font-size:.68rem; padding:4px 8px }
+}
+
+/* ≤375px : small phone (iPhone SE, etc) */
+@media(max-width:375px){
+  .main-container{ width:calc(100% - 10px) }
+  .pokemon-grid{ grid-template-columns:1fr; gap:8px }
+  .skeleton-grid{ grid-template-columns:1fr }
+  .team-members{ grid-template-columns:1fr }
+  .fighter-grid, .wild-grid{ grid-template-columns:1fr }
+  .battle-field{ gap:6px }
+  .hp-name{ font-size:.78rem }
+  .hp-num{ font-size:.64rem }
+  .tabs-wrap{ flex-direction:column; border-radius:16px }
+  .tab-btn{ width:100%; justify-content:center; border-radius:12px }
+  .modal-header{ flex-wrap:wrap; gap:8px }
+  .pokemon-detail-name{ font-size:1.1rem }
+  .physical-stat{ padding:6px }
+}
+
+/* ≤320px : extra small */
+@media(max-width:320px){
+  html{ font-size:13px }
+  .main-container{ width:calc(100% - 8px) }
+  .brand-text h1{ font-size:.9rem }
+  .tabs-wrap{ padding:3px }
+  .tab-btn{ padding:7px 8px; font-size:.74rem }
+  .chip{ height:28px; padding:0 8px; font-size:.68rem }
+  .search-input{ height:36px; font-size:.82rem }
+  .card-content{ padding:7px 8px 8px }
+}
+
+/* Touch targets & overflow safety */
+@media(pointer:coarse){
+  .btn, .chip, .tab-btn, .mode-btn, .move-btn, .fighter-card, .wild-card, .icon-btn, .release-btn{ min-height:44px }
+  .icon-btn{ width:36px; height:36px }
+}
+* { min-width:0 }
+.tabs-wrap, .filter-pills, .fighter-grid, .wild-grid, .team-members, .pokemon-grid, .moves-grid, .main-menu-grid, .picked-moves-grid{ min-width:0; overflow-wrap:anywhere }
+
 /* ============ UTIL ============ */
 .row{display:flex;align-items:center;gap:8px}
 .hidden{display:none!important}
