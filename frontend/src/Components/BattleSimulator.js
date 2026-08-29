@@ -199,6 +199,7 @@ const BattleSimulator = ({ team }) => {
   const [damagePop, setDamagePop] = useState(null);
   const [dialog, setDialog] = useState('');
   const [menu, setMenu] = useState('main'); // main | fight | bag
+  const [hoveredMove, setHoveredMove] = useState(null);
   const sessionRef = useRef(null);
   useEffect(()=>{ sessionRef.current = session; }, [session]);
 
@@ -570,6 +571,17 @@ const BattleSimulator = ({ team }) => {
     else order = Math.random()<0.5 ? ['player','enemy'] : ['enemy','player'];
 
     setMenu('main');
+    // clear preview and announce order so it's not confusing who attacks first
+    setHoveredMove(null);
+    const orderReason = pPri!==ePri ? `Priority ${pPri} vs ${ePri}` : `Speed ${pSpeed} vs ${eSpeed}`;
+    const firstName = order[0]==='player' ? cur.player.pokemon.name : cur.enemy.pokemon.name;
+    if(order[0]==='enemy'){
+      typewriter(`Foe's ${firstName} is faster (${orderReason}) — foe strikes first!`);
+      await new Promise(r=>setTimeout(r, 950));
+    } else {
+      typewriter(`${firstName} moves first! (${orderReason})`);
+      await new Promise(r=>setTimeout(r, 650));
+    }
     // execute in order
     for(const who of order){
       const afterCheck = sessionRef.current;
@@ -777,10 +789,14 @@ const BattleSimulator = ({ team }) => {
                       return (
                         <button
                           key={m.name}
-                          className={`move-btn realistic-move type-${m.type} ${out ? 'out' : ''} ${anim ? 'disabled' : ''}`}
+                          className={`move-btn realistic-move type-${m.type} ${out ? 'out' : ''} ${anim ? 'disabled' : ''} ${hoveredMove?.name===m.name ? 'hovered' : ''}`}
                           onClick={()=>handlePlayerMove(m)}
+                          onMouseEnter={()=>setHoveredMove(m)}
+                          onMouseLeave={()=>setHoveredMove(null)}
+                          onFocus={()=>setHoveredMove(m)}
+                          onBlur={()=>setHoveredMove(null)}
                           disabled={!!anim || session.turn!=='player' || out}
-                          style={{borderColor: out ? '#e2e8f0' : typeColor(m.type)}}
+                          style={{borderColor: hoveredMove?.name===m.name ? typeColor(m.type) : out ? '#e2e8f0' : typeColor(m.type)}}
                         >
                           <div className="move-head">
                             <span className="move-name">{m.name}</span>
@@ -799,7 +815,20 @@ const BattleSimulator = ({ team }) => {
                   </div>
                   <div className="battle-actions">
                     <button className="btn-refresh" onClick={()=>setMenu('main')}><X size={12}/> Back</button>
-                    <div className="turn-hint"><Activity size={12} style={{display:'inline', verticalAlign:-2}}/> {session.turn==='player' ? `Speed: ${getStat(session.player.pokemon,'speed')} vs ${getStat(session.enemy.pokemon,'speed')} — priority wins` : 'Foe is choosing…'}</div>
+                    <div className="turn-hint">
+                      {hoveredMove ? (
+                        (()=> {
+                          const eBest = Math.max(...session.enemy.moves.filter(mm=>mm.pp>0).map(mm=>mm.priority||0), 0);
+                          const pPri = hoveredMove.priority||0;
+                          const pSpd = getStat(session.player.pokemon,'speed');
+                          const eSpd = getStat(session.enemy.pokemon,'speed');
+                          let whoFirst, reason;
+                          if(pPri!==eBest){ whoFirst = pPri>eBest ? 'You' : 'Foe'; reason = `Priority ${pPri} vs ${eBest}`; }
+                          else { whoFirst = pSpd>=eSpd ? 'You' : 'Foe'; reason = `Speed ${pSpd} vs ${eSpd}`; }
+                          return <><Activity size={12} style={{display:'inline', verticalAlign:-2}}/> Hover: {hoveredMove.name} → <b style={{color: whoFirst==='You' ? '#16a34a' : '#dc2626'}}>{whoFirst} first</b> <span style={{opacity:.7}}>({reason})</span></>;
+                        })()
+                      ) : session.turn==='player' ? <><Activity size={12} style={{display:'inline', verticalAlign:-2}}/> Speed: {getStat(session.player.pokemon,'speed')} vs {getStat(session.enemy.pokemon,'speed')} — priority wins</> : <>Foe is choosing…</> }
+                    </div>
                   </div>
                 </>
               )}
@@ -833,7 +862,6 @@ const BattleSimulator = ({ team }) => {
 
   if(battleMode==='team'){
     const myPower = team.reduce((s,p)=>s+(p.stats?.reduce((a,x)=>a+x.base,0)||0),0);
-    const myAvg = team.length? Math.round(myPower/team.length):0;
     const oppPower = opponentTeam.reduce((s,p)=>s+(p.stats?.reduce((a,x)=>a+x.base,0)||0),0);
     const isReady = team.length>0 && opponentTeam.length>0;
     return (
@@ -848,78 +876,57 @@ const BattleSimulator = ({ team }) => {
           <button className={`mode-btn ${battleMode==='team'?'active':''}`} onClick={()=>setBattleMode('team')}>Team Battle</button>
         </div>
 
-        <div className="squad-stage">
-          <div className="squad-panel">
-            <div className="squad-head">
+        <div className="squad-stage clean">
+          <div className="squad-panel clean">
+            <div className="squad-head clean">
               <h3><Crown size={14}/> Your Squad</h3>
-              <span className="pill" style={{fontSize:'.72rem'}}><Heart size={12}/> {team.length}/6 • {myPower} PWR</span>
+              <span className="pill small">{team.length}/6</span>
             </div>
             {team.length===0 ? (
               <div className="empty-team"><p>Need at least 1 Pokémon. Catch in Discover!</p></div>
             ) : (
-              <>
-                <div className="squad-grid">
-                  {team.map((p,i)=>(
-                    <div key={p.id} className={`squad-card ${i===0?'lead':''}`}>
-                      {i===0 && <span className="lead-badge"><Crown size={10}/> LEAD</span>}
-                      <span className="squad-num">#{i+1}</span>
-                      <img src={p.image} alt={p.name} />
-                      <div className="squad-info">
-                        <b>{p.name}</b>
-                        <span>{p.types.join('/') } • {calcHP(p.stats?.find(s=>s.name==='hp')?.base||55)} HP • {getStat(p,'speed')} SPD</span>
-                        <div className="squad-types">{p.types.map(t=><span key={t} className={`type-badge type-${t}`} style={{fontSize:'.52rem', padding:'2px 6px'}}>{t}</span>)}</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <div className="squad-foot"><span>Avg {myAvg} PWR</span><span>{team.length===6?'Full squad':'Add more in Discover'}</span></div>
-              </>
+              <div className="squad-grid clean">
+                {team.map((p,i)=>(
+                  <div key={p.id} className={`squad-card clean ${i===0?'lead':''}`}>
+                    {i===0 && <span className="lead-badge">LEAD</span>}
+                    <img src={p.image} alt={p.name} />
+                    <b>{p.name}</b>
+                    <span className="squad-sub">{p.types.join(' • ')}</span>
+                  </div>
+                ))}
+              </div>
             )}
           </div>
 
-          <div className="vs-column team-vs">
-            <div className="vs-ring"><span className="vs-mini">VS</span><div className="vs-pulse"/><div className="vs-pulse delay"/></div>
-            <div className="squad-vs-stats">
-              <div className="vs-stat"><span>Power</span><b>{myPower} : {oppPower}</b><div className="vs-bar"><div className="a" style={{width:`${myPower+oppPower? (myPower/(myPower+oppPower))*100:50}%`, background: myPower>oppPower?'#22c55e': myPower<oppPower?'#ef4444':'#94a3b8'}}/></div></div>
-              <div className="vs-stat"><span>Size</span><b>{team.length} vs {opponentTeam.length}</b></div>
-              <div className={`edge ${myPower>oppPower?'player': myPower<oppPower?'enemy':'even'}`} style={{marginTop:6}}>{myPower===oppPower?'Even squads': myPower>oppPower?'Your team stronger':'Enemy team stronger'}</div>
+          <div className="vs-column team-vs clean">
+            <div className="vs-ring small"><span className="vs-mini">VS</span></div>
+            <div className="clean-vs-info">
+              <span>{team.length} vs {opponentTeam.length}</span>
+              <small>{myPower>oppPower?'You lead on power': myPower<oppPower?'Foe leads':'Even'}</small>
             </div>
             <button className={`battle-button draft-cta ${!isReady?'disabled':''}`} onClick={startBattle} disabled={!isReady}>
-              {isReady ? `Start Team Battle — ${team.length} vs ${opponentTeam.length} →` : 'Waiting for squads…'} <Swords size={16}/>
+              {isReady ? `Start ${team.length}v${opponentTeam.length} Battle →` : 'Waiting…'} <Swords size={14}/>
             </button>
-            <p className="cta-hint" style={{marginTop:6}}><Activity size={10}/> Auto-switch on faint • First alive leads</p>
           </div>
 
-          <div className="squad-panel">
-            <div className="squad-head">
+          <div className="squad-panel clean">
+            <div className="squad-head clean">
               <h3><Zap size={14}/> Enemy Squad</h3>
-              <div style={{display:'flex', gap:6}}>
-                <span className="pill" style={{fontSize:'.72rem'}}>{opponentTeam.length} wild</span>
-                <button className="btn-refresh" onClick={()=>generateOpponentTeam()} disabled={isLoading} style={{height:28, fontSize:'.72rem', padding:'0 10px'}}><RefreshCw size={12}/> Reroll</button>
-              </div>
+              <button className="btn-refresh small" onClick={()=>generateOpponentTeam()} disabled={isLoading}><RefreshCw size={12}/> Reroll</button>
             </div>
             {isLoading ? (
-              <div className="skeleton-grid" style={{gridTemplateColumns:'repeat(2,1fr)', marginTop:8}}><div className="skeleton-card" style={{height:96}}/><div className="skeleton-card" style={{height:96}}/><div className="skeleton-card" style={{height:96}}/><div className="skeleton-card" style={{height:96}}/></div>
-            ) : opponentTeam.length===0 ? (
-              <div className="empty-team"><p>Generating wild squad…</p></div>
+              <div className="skeleton-grid" style={{gridTemplateColumns:'repeat(2,1fr)', marginTop:8}}><div className="skeleton-card" style={{height:84}}/><div className="skeleton-card" style={{height:84}}/><div className="skeleton-card" style={{height:84}}/><div className="skeleton-card" style={{height:84}}/></div>
             ) : (
-              <>
-                <div className="squad-grid">
-                  {opponentTeam.map((p,i)=>(
-                    <div key={p.id} className="squad-card">
-                      <span className="squad-num">#{i+1}</span>
-                      <span className="rarity small" style={{background:getRarity(p).bg, color:getRarity(p).color, borderColor:getRarity(p).color, position:'absolute', top:6, right:6, fontSize:'.52rem'}}>{getRarity(p).label}</span>
-                      <img src={p.image} alt={p.name} />
-                      <div className="squad-info">
-                        <b>{p.name}</b>
-                        <span>{p.types.join('/')} • {calcHP(p.stats?.find(s=>s.name==='hp')?.base||55)} HP</span>
-                        <div className="squad-types">{p.types.map(t=><span key={t} className={`type-badge type-${t}`} style={{fontSize:'.52rem', padding:'2px 6px'}}>{t}</span>)}</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <div className="squad-foot"><span>Wild team • Lv.50 each</span><span>Tap Reroll for new foes</span></div>
-              </>
+              <div className="squad-grid clean">
+                {opponentTeam.map((p,i)=>(
+                  <div key={p.id} className="squad-card clean">
+                    <span className="rarity tiny" style={{background:getRarity(p).bg, color:getRarity(p).color}}>{getRarity(p).label}</span>
+                    <img src={p.image} alt={p.name} />
+                    <b>{p.name}</b>
+                    <span className="squad-sub">{p.types.join(' • ')}</span>
+                  </div>
+                ))}
+              </div>
             )}
           </div>
         </div>
