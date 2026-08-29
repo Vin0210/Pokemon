@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Swords, RefreshCw, Trophy, Zap, Shield, Crown, Flame, Droplets, Leaf, X, Info, Activity, Timer } from 'lucide-react';
+import { Swords, RefreshCw, Trophy, Zap, Shield, Crown, Flame, Droplets, Leaf, X, Info, Activity, Timer, Search, Star, Heart, Eye, Sparkles, ChevronRight } from 'lucide-react';
 import { recordBattle } from '../Services/battleService';
 import { fetchRandomPokemon } from '../Services/PokemonService';
 
@@ -608,73 +608,225 @@ const BattleSimulator = ({ team }) => {
     );
   }
 
-  // SELECTOR MODE (unchanged but with PP preview)
+  // SELECTOR MODE — enhanced card draft
+  const getRarity = (p) => {
+    const total = p.stats?.reduce((s,x)=>s+x.base,0) || 0;
+    if(total>580 || ['mewtwo','rayquaza','lugia','ho-oh','dialga','palkia','giratina','mew','celebi'].includes(p.name)) return { label:'Legendary', color:'#f59e0b', bg:'linear-gradient(135deg,#fef3c7,#fde68a)' };
+    if(total>470) return { label:'Rare', color:'#8b5cf6', bg:'linear-gradient(135deg,#ede9fe,#ddd6fe)' };
+    if(total>380) return { label:'Uncommon', color:'#0ea5e9', bg:'linear-gradient(135deg,#e0f2fe,#bae6fd)' };
+    return { label:'Common', color:'#64748b', bg:'linear-gradient(135deg,#f1f5f9,#e2e8f0)' };
+  };
+  const matchup = (a,b) => {
+    if(!a||!b) return null;
+    const aSpd=getStat(a,'speed'), bSpd=getStat(b,'speed');
+    const aMoves=getMovesForTypes(a.types), bMoves=getMovesForTypes(b.types);
+    const aBest=Math.max(...aMoves.map(m=> m.power * getEffectiveness(m.type,b.types)));
+    const bBest=Math.max(...bMoves.map(m=> m.power * getEffectiveness(m.type,a.types)));
+    const edge = aBest>bBest ? 'player' : bBest>aBest ? 'enemy' : aSpd>bSpd ? 'player' : bSpd>aSpd ? 'enemy' : 'even';
+    return { aSpd, bSpd, aBest, bBest, edge };
+  };
+  const mm = matchup(pokemon1, pokemon2);
+
   return (
-    <div className="battle-simulator">
+    <div className="battle-simulator draft-mode">
       <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', gap:10, flexWrap:'wrap'}}>
         <h2><Swords size={16}/> Battle Arena</h2>
-        <span className="pill" style={{fontSize:'.76rem'}}><Shield size={12}/> Realistic • Speed + Priority + PP</span>
+        <span className="pill" style={{fontSize:'.74rem'}}><Sparkles size={12}/> Draft • Pick your fighter first</span>
       </div>
 
       <div className="battle-mode-toggle">
-        <button className={`mode-btn ${battleMode==='wild'?'active':''}`} onClick={()=>{setBattleMode('wild'); resetSession();}}>Wild Encounter</button>
-        <button className={`mode-btn ${battleMode==='team'?'active':''}`} onClick={()=>{setBattleMode('team'); resetSession();}}>Team Battle</button>
+        <button className={`mode-btn ${battleMode==='wild'?'active':''}`} onClick={()=>{setBattleMode('wild'); setPokemon2(null);}}>Wild Encounter</button>
+        <button className={`mode-btn ${battleMode==='team'?'active':''}`} onClick={()=>{setBattleMode('team'); setPokemon2(null);}}>Team Battle</button>
       </div>
 
-      <div className="battle-selectors">
-        <div className="pokemon-selector">
-          <label><Crown size={12} style={{display:'inline', verticalAlign:-1}}/> Your fighter</label>
-          <select className="battle-select" onChange={(e)=>{ const id=parseInt(e.target.value); setPokemon1(team.find(p=>p.id===id)||null);}} value={pokemon1?.id||''}>
-            <option value="">Choose from team…</option>
-            {team.filter(p=>p?.id&&p?.name).map(p=><option key={`team-${p.id}`} value={p.id}>{p.name} — {p.types.join('/')} • {calcHP(p.stats?.find(s=>s.name==='hp')?.base||55)} HP • {getStat(p,'speed')} SPD</option>)}
-          </select>
+      <div className="draft-stage">
+        {/* YOUR TEAM */}
+        <div className="draft-panel">
+          <div className="draft-head">
+            <div>
+              <h3><Crown size={14} style={{display:'inline', verticalAlign:-1}}/> Your Team</h3>
+              <p>{team.length}/6 • {pokemon1 ? `Selected: ${pokemon1.name}` : 'Tap a card to select'}</p>
+            </div>
+            <span className={`draft-step ${pokemon1?'done':''}`}>{pokemon1 ? '✓' : '1'}</span>
+          </div>
+
+          <div className="fighter-grid">
+            {team.map(p=>{
+              const sel = pokemon1?.id===p.id;
+              const hp=calcHP(p.stats?.find(s=>s.name==='hp')?.base||55);
+              const spd=getStat(p,'speed');
+              const total = p.stats?.reduce((s,x)=>s+x.base,0)||0;
+              return (
+                <motion.button
+                  key={p.id}
+                  onClick={()=>setPokemon1(p)}
+                  className={`fighter-card ${sel?'selected':''}`}
+                  whileHover={{ y:-2 }}
+                  whileTap={{ scale:.98 }}
+                  style={{ borderColor: sel ? typeColor(p.types[0]) : undefined }}
+                >
+                  {sel && <span className="select-check">✓</span>}
+                  <div className="fighter-img" style={{ background: `radial-gradient(220px 120px at 50% 20%, ${typeColor(p.types[0])}18, transparent 70%), linear-gradient(180deg, #fff, #f8fafc)` }}>
+                    <img src={p.image} alt={p.name} />
+                  </div>
+                  <div className="fighter-body">
+                    <div className="fighter-name">{p.name} <span>#{String(p.id).padStart(4,'0')}</span></div>
+                    <div className="fighter-types">{p.types.map(t=><span key={t} className={`type-badge type-${t}`} style={{fontSize:'.54rem', padding:'2px 6px'}}>{t}</span>)}</div>
+                    <div className="fighter-stats">
+                      <span><Heart size={10}/> {hp} HP</span>
+                      <span><Zap size={10}/> {spd} SPD</span>
+                      <span><Star size={10}/> {total}</span>
+                    </div>
+                    <div className="fighter-moves-preview">
+                      {getMovesForTypes(p.types).slice(0,2).map(m=>(
+                        <span key={m.name} className="mini-move" style={{borderColor:typeColor(m.type)}}><span className="dot" style={{background:typeColor(m.type)}}/>{m.name}</span>
+                      ))}
+                    </div>
+                  </div>
+                </motion.button>
+              );
+            })}
+            {team.length===0 && (
+              <div className="empty-team" style={{gridColumn:'1/-1'}}><p>Your team is empty. Catch Pokémon in Discover!</p></div>
+            )}
+          </div>
+
           {pokemon1 && (
-            <div className="selected-pokemon">
-              <img src={pokemon1.image} alt={pokemon1.name}/>
-              <div className="pokemon-stats">
-                <h3>{pokemon1.name} <span style={{fontSize:'.68rem', background:'#f1f5f9', border:'1px solid #e2e8f0', padding:'2px 6px', borderRadius:999}}>{calcHP(pokemon1.stats?.find(s=>s.name==='hp')?.base||55)} HP • {getStat(pokemon1,'speed')} SPD</span></h3>
-                <div style={{fontSize:'.76rem', color:'#64748b', fontWeight:700, marginTop:4}}>{pokemon1.types.join(' • ')} → {getMovesForTypes(pokemon1.types).map(m=>`${m.name} ${m.power}/${m.acc} PP${m.pp}`).join(' • ')}</div>
+            <motion.div initial={{opacity:0, y:6}} animate={{opacity:1, y:0}} className="picked-detail">
+              <div className="picked-head">
+                <img src={pokemon1.image} alt={pokemon1.name} />
+                <div>
+                  <h4>{pokemon1.name} <span>Lv.50 • {pokemon1.types.join(' / ')}</span></h4>
+                  <div className="picked-bars">
+                    {[
+                      {k:'HP', v: calcHP(pokemon1.stats?.find(s=>s.name==='hp')?.base||55), max: 350},
+                      {k:'SPD', v: getStat(pokemon1,'speed'), max: 180},
+                      {k:'PWR', v: pokemon1.stats?.reduce((s,x)=>s+x.base,0)||0, max: 600},
+                    ].map(b=>(
+                      <div key={b.k} className="picked-bar"><span>{b.k}</span><div className="bar"><div style={{width: `${Math.min(100, (b.v/b.max)*100)}%`, background: typeColor(pokemon1.types[0])}}/></div><b>{b.v}</b></div>
+                    ))}
+                  </div>
+                </div>
               </div>
-            </div>
+              <div className="picked-moves">
+                <h5><Swords size={12}/> Moveset • PP tracked</h5>
+                <div className="picked-moves-grid">
+                  {getMovesForTypes(pokemon1.types).map(m=>(
+                    <div key={m.name} className={`picked-move type-${m.type}`} style={{borderColor:typeColor(m.type)}}>
+                      <div className="pm-head"><span className="pm-name">{m.name}</span><span className={`pm-cat ${m.cat}`}>{m.cat}</span></div>
+                      <div className="pm-foot"><span className="pm-type" style={{background:typeColor(m.type)}}>{m.type}</span><span>{m.power} PWR</span><span>{m.acc}%</span><span>PP {m.pp}</span></div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
           )}
         </div>
 
-        <div className="vs" aria-hidden>VS</div>
-
-        <div className="pokemon-selector">
-          <label>{battleMode==='wild'?<><Zap size={12} style={{display:'inline', verticalAlign:-1}}/> Wild opponent</>:<><Crown size={12} style={{display:'inline', verticalAlign:-1}}/> Team opponent</>}</label>
-          {battleMode==='wild'?(
-            <div className="wild-pokemon-controls">
-              <select className="battle-select" onChange={(e)=>{ const id=parseInt(e.target.value); setPokemon2(wildPokemon.find(p=>p.id===id)||null);}} value={pokemon2?.id||''}>
-                <option value="">Choose wild Pokémon…</option>
-                {wildPokemon.filter(p=>p?.id&&p?.name).map(p=><option key={`wild-${p.id}`} value={p.id}>{p.name} — {calcHP(p.stats?.find(s=>s.name==='hp')?.base||55)} HP • {getStat(p,'speed')} SPD</option>)}
-              </select>
-              <button className="btn-refresh" onClick={refreshWild} disabled={isLoading}><RefreshCw size={12} style={{display:'inline', verticalAlign:-1}}/> {isLoading?'Shuffling…':'Shuffle wild pool'}</button>
+        <div className="vs-column">
+          <div className="vs-ring">
+            <span className="vs-mini">VS</span>
+            <div className="vs-pulse" />
+            <div className="vs-pulse delay" />
+          </div>
+          {mm && (
+            <div className="matchup-card">
+              <h4>Matchup</h4>
+              <div className="match-row"><span>Speed</span><div className="vs-bar"><div className="a" style={{width:`${(mm.aSpd/(mm.aSpd+mm.bSpd))*100}%`}}/></div><span>{mm.aSpd} : {mm.bSpd}</span></div>
+              <div className="match-row"><span>Best hit</span><div className="vs-bar"><div className="a" style={{width:`${(mm.aBest/(mm.aBest+mm.bBest))*100}%`, background: mm.edge==='player' ? '#22c55e' : mm.edge==='enemy' ? '#ef4444' : '#94a3b8'}}/></div><span>{Math.round(mm.aBest)} : {Math.round(mm.bBest)}</span></div>
+              <div className={`edge ${mm.edge}`}>{mm.edge==='player' ? `Edge: ${pokemon1.name}` : mm.edge==='enemy' ? `Edge: ${pokemon2.name}` : 'Even matchup'}</div>
+              <div className="edge-hint"><Activity size={10}/> Speed + priority decides who strikes first</div>
             </div>
-          ):(
-            <select className="battle-select" onChange={(e)=>{ const id=parseInt(e.target.value); setPokemon2(team.find(p=>p.id===id)||null);}} value={pokemon2?.id||''}>
-              <option value="">Choose teammate…</option>
-              {team.filter(p=>p?.id&&p?.name&&(!pokemon1||p.id!==pokemon1.id)).map(p=><option key={`team-${p.id}`} value={p.id}>{p.name}</option>)}
-            </select>
           )}
-          {pokemon2 && (
-            <div className="selected-pokemon">
-              <img src={pokemon2.image} alt={pokemon2.name}/>
-              <div className="pokemon-stats">
-                <h3>{pokemon2.name} <span style={{fontSize:'.68rem', background:'#f1f5f9', border:'1px solid #e2e8f0', padding:'2px 6px', borderRadius:999}}>{calcHP(pokemon2.stats?.find(s=>s.name==='hp')?.base||55)} HP • {getStat(pokemon2,'speed')} SPD</span></h3>
-                <div style={{fontSize:'.76rem', color:'#64748b', fontWeight:700, marginTop:4}}>{pokemon2.types.join(' • ')} → {getMovesForTypes(pokemon2.types).map(m=>`${m.name} ${m.power}`).join(', ')}</div>
-              </div>
+          <button className={`battle-button draft-cta ${!pokemon1||!pokemon2?'disabled':''}`} onClick={startBattle} disabled={!pokemon1||!pokemon2}>
+            {!pokemon1 ? 'Pick your fighter' : !pokemon2 ? 'Pick opponent' : `Start — ${pokemon1.name} vs ${pokemon2.name} →`}
+            <ChevronRight size={16}/>
+          </button>
+          {!pokemon1 || !pokemon2 ? <p className="cta-hint"><Info size={12}/> Both fighters required • Wild or Team on the right</p> : null}
+        </div>
+
+        {/* OPPONENT */}
+        <div className="draft-panel">
+          <div className="draft-head">
+            <div>
+              <h3>{battleMode==='wild' ? <><Zap size={14} style={{display:'inline', verticalAlign:-1}}/> Wild Pool</> : <><Swords size={14} style={{display:'inline', verticalAlign:-1}}/> Team Foe</>}</h3>
+              <p>{battleMode==='wild' ? `${wildPokemon.length} encounters • shuffle for new` : `${Math.max(0, team.length-(pokemon1?1:0))} teammates`} {pokemon2 ? `• Selected: ${pokemon2.name}` : ''}</p>
             </div>
+            <span className={`draft-step ${pokemon2?'done':''}`}>{pokemon2 ? '✓' : '2'}</span>
+          </div>
+
+          {battleMode==='wild' ? (
+            <>
+              <div className="wild-toolbar">
+                <div className="wild-search">
+                  <Search size={12}/> Wild grass • Lv.50 • Click to challenge
+                </div>
+                <button className="btn-refresh" onClick={refreshWild} disabled={isLoading} style={{height:32, fontSize:'.76rem'}}><RefreshCw size={12}/> Shuffle</button>
+              </div>
+              <div className="wild-grid">
+                {wildPokemon.map(w=>{
+                  const sel = pokemon2?.id===w.id;
+                  const rarity=getRarity(w);
+                  const hp=calcHP(w.stats?.find(s=>s.name==='hp')?.base||55);
+                  return (
+                    <motion.button key={w.id} onClick={()=>setPokemon2(w)} className={`wild-card ${sel?'selected':''}`} whileHover={{y:-2}} whileTap={{scale:.98}} style={{ borderColor: sel ? typeColor(w.types[0]) : undefined}}>
+                      <span className="rarity" style={{background: rarity.bg, color: rarity.color, borderColor: rarity.color}}>{rarity.label}</span>
+                      {sel && <span className="select-check">✓</span>}
+                      <div className="wild-img" style={{background:`radial-gradient(180px 90px at 50% 18%, ${typeColor(w.types[0])}1A, transparent 70%)`}}>
+                        <img src={w.image} alt={w.name} />
+                      </div>
+                      <div className="wild-name">{w.name} <span>Lv.50</span></div>
+                      <div className="wild-types">{w.types.map(t=><span key={t} className={`type-badge type-${t}`} style={{fontSize:'.52rem', padding:'2px 6px'}}>{t}</span>)}</div>
+                      <div className="wild-stats"><span>{hp} HP</span><span>{getStat(w,'speed')} SPD</span></div>
+                      <div className="wild-moves">{getMovesForTypes(w.types).slice(0,2).map(m=> <span key={m.name} className="mini-move" style={{borderColor:typeColor(m.type)}}>{m.name}</span>)}</div>
+                    </motion.button>
+                  );
+                })}
+              </div>
+            </>
+          ) : (
+            <div className="fighter-grid">
+              {team.filter(p=> !pokemon1 || p.id!==pokemon1.id).map(p=>{
+                const sel = pokemon2?.id===p.id;
+                const hp=calcHP(p.stats?.find(s=>s.name==='hp')?.base||55);
+                return (
+                  <motion.button key={p.id} onClick={()=>setPokemon2(p)} className={`fighter-card ${sel?'selected':''}`} whileHover={{y:-2}} whileTap={{scale:.98}} style={{borderColor: sel ? typeColor(p.types[0]) : undefined}}>
+                    {sel && <span className="select-check">✓</span>}
+                    <div className="fighter-img"><img src={p.image} alt={p.name}/></div>
+                    <div className="fighter-body">
+                      <div className="fighter-name">{p.name} <span>#{String(p.id).padStart(4,'0')}</span></div>
+                      <div className="fighter-types">{p.types.map(t=><span key={t} className={`type-badge type-${t}`} style={{fontSize:'.54rem', padding:'2px 6px'}}>{t}</span>)}</div>
+                      <div className="fighter-stats"><span>{hp} HP</span><span>{getStat(p,'speed')} SPD</span></div>
+                    </div>
+                  </motion.button>
+                );
+              })}
+              {team.filter(p=> !pokemon1 || p.id!==pokemon1.id).length===0 && (
+                <div className="empty-team" style={{gridColumn:'1/-1'}}><p>Need 2+ Pokémon for Team Battle. Catch more!</p></div>
+              )}
+            </div>
+          )}
+
+          {pokemon2 && (
+            <motion.div initial={{opacity:0, y:6}} animate={{opacity:1, y:0}} className="picked-detail small">
+              <div className="picked-head">
+                <img src={pokemon2.image} alt={pokemon2.name}/>
+                <div>
+                  <h4>{pokemon2.name} <span>{pokemon2.types.join(' / ')}</span></h4>
+                  <div className="picked-bars">
+                    <div className="picked-bar"><span>HP</span><div className="bar"><div style={{width:`${Math.min(100, calcHP(pokemon2.stats?.find(s=>s.name==='hp')?.base||55)/350*100)}%`, background: typeColor(pokemon2.types[0])}}/></div><b>{calcHP(pokemon2.stats?.find(s=>s.name==='hp')?.base||55)}</b></div>
+                    <div className="picked-bar"><span>SPD</span><div className="bar"><div style={{width:`${Math.min(100, getStat(pokemon2,'speed')/180*100)}%`, background: typeColor(pokemon2.types[0])}}/></div><b>{getStat(pokemon2,'speed')}</b></div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
           )}
         </div>
       </div>
 
-      <motion.button className="battle-button" onClick={startBattle} disabled={!pokemon1||!pokemon2} whileTap={{scale:.98}}>
-        {!pokemon1||!pokemon2 ? 'Select both fighters' : `Start Battle — ${pokemon1.name} vs ${pokemon2.name} →`}
-      </motion.button>
-      <div style={{marginTop:8, display:'flex', gap:6, flexWrap:'wrap'}}>
-        <span className="pill" style={{fontSize:'.74rem'}}><Info size={12}/> Faster Pokémon strikes first. Quick Attack / Ice Shard have +1 priority.</span>
-        <span className="pill" style={{fontSize:'.74rem'}}><Activity size={12}/> STAB 1.5× • Crit 6.25% • Type chart accurate</span>
+      <div style={{marginTop:10, display:'flex', gap:6, flexWrap:'wrap'}}>
+        <span className="pill" style={{fontSize:'.72rem'}}><Eye size={12}/> Tap any card to select • Selected glows with type color</span>
+        <span className="pill" style={{fontSize:'.72rem'}}><Sparkles size={12}/> Wild rarity: Common → Legendary • Higher total stats</span>
       </div>
 
       {history.length>0 && (
