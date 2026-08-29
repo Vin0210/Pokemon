@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Users, Swords, Sparkles } from 'lucide-react';
+import { Search, Users } from 'lucide-react';
 import PokemonList from './Components/PokemonList';
 import Team from './Components/Team';
 import BattleSimulator from './Components/BattleSimulator';
