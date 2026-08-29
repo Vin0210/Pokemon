@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Swords, RefreshCw, Trophy, Zap, Shield, Crown, Flame, Droplets, Leaf, X, Activity, Timer, Search, Heart, Sparkles, ChevronRight } from 'lucide-react';
@@ -189,6 +190,7 @@ const BattleSimulator = ({ team }) => {
   const [pokemon1, setPokemon1] = useState(null);
   const [pokemon2, setPokemon2] = useState(null);
   const [wildPokemon, setWildPokemon] = useState([]);
+  const [opponentTeam, setOpponentTeam] = useState([]);
   const [battleMode, setBattleMode] = useState('wild');
   const [isLoading, setIsLoading] = useState(true);
   const [history, setHistory] = useState([]);
@@ -200,22 +202,65 @@ const BattleSimulator = ({ team }) => {
   const sessionRef = useRef(null);
   useEffect(()=>{ sessionRef.current = session; }, [session]);
 
+  const generateOpponentTeam = async (size) => {
+    const n = size || Math.max(1, team.length || 3);
+    setIsLoading(true);
+    try{
+      const rnd = await Promise.all(Array(n).fill().map(()=>fetchRandomPokemon()));
+      setOpponentTeam(rnd);
+    }catch(e){ console.error(e); }
+    finally{ setIsLoading(false); }
+  };
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     const load = async () => {
       try{
         if(battleMode==='wild'){
           const rnd = await Promise.all(Array(5).fill().map(()=>fetchRandomPokemon().then(p=>({...p, back: p.image?.replace('other/official-artwork','sprites/pokemon/other/official-artwork') || p.image, front: p.image }))));
           setWildPokemon(rnd);
+        } else if(battleMode==='team'){
+          if(team.length>0 && opponentTeam.length===0){
+            await generateOpponentTeam(team.length);
+            return;
+          }
+          if(team.length>0 && opponentTeam.length!==team.length){
+            await generateOpponentTeam(team.length);
+            return;
+          }
         }
         setIsLoading(false);
       }catch(e){ setIsLoading(false); console.error(e); }
     };
     load();
-  }, [battleMode]);
+  }, [battleMode, team.length]);
 
   const resetSession = () => { setSession(null); setAnim(null); setDamagePop(null); setDialog(''); setMenu('main'); };
 
   const startBattle = () => {
+    if(battleMode==='team'){
+      if(team.length===0 || opponentTeam.length===0) return;
+      const pTeam = team.map(p=>({ pokemon:p, hp:calcHP(p.stats?.find(s=>s.name==='hp')?.base||55), maxHp:calcHP(p.stats?.find(s=>s.name==='hp')?.base||55), moves:getMovesForTypes(p.types) }));
+      const eTeam = opponentTeam.map(p=>({ pokemon:p, hp:calcHP(p.stats?.find(s=>s.name==='hp')?.base||55), maxHp:calcHP(p.stats?.find(s=>s.name==='hp')?.base||55), moves:getMovesForTypes(p.types) }));
+      const sess = {
+        isTeamBattle:true,
+        playerTeam: pTeam,
+        enemyTeam: eTeam,
+        activePlayerIdx:0,
+        activeEnemyIdx:0,
+        player: pTeam[0],
+        enemy: eTeam[0],
+        turn:'player',
+        winner:null,
+        winnerTeam:null,
+        turnCount:1,
+        battleMode:'team',
+      };
+      setSession(sess);
+      setDialog(`Team battle! ${pTeam[0].pokemon.name.toUpperCase()} vs ${eTeam[0].pokemon.name.toUpperCase()}!`);
+      setTimeout(()=> setDialog(`What will ${pTeam[0].pokemon.name} do?`), 900);
+      return;
+    }
     if(!pokemon1 || !pokemon2) return;
     const p1max = calcHP(pokemon1.stats?.find(s=>s.name==='hp')?.base||55);
     const p2max = calcHP(pokemon2.stats?.find(s=>s.name==='hp')?.base||55);
@@ -256,20 +301,28 @@ const BattleSimulator = ({ team }) => {
     const attacker = cur[attackerKey];
     const defender = cur[defenderKey];
     if(!attacker || !defender) return null;
-    // PP check (except Struggle)
     const moveWithPp = move.isStruggle ? move : attacker.moves.find(m=>m.name===move.name) || move;
     if(!move.isStruggle && moveWithPp.pp<=0){
       typewriter(`${attacker.pokemon.name} has no PP left for ${move.name}!`);
       await new Promise(r=>setTimeout(r, 700));
       return 'continue';
     }
-    // consume PP
     if(!move.isStruggle){
       setSession(prev=>{
         if(!prev) return prev;
         const next={...prev};
-        const idx = next[attackerKey].moves.findIndex(m=>m.name===move.name);
-        if(idx>=0){ next[attackerKey].moves[idx] = { ...next[attackerKey].moves[idx], pp: Math.max(0, next[attackerKey].moves[idx].pp-1) } }
+        const list = [...next[attackerKey].moves];
+        const idx = list.findIndex(m=>m.name===move.name);
+        if(idx>=0){ list[idx] = { ...list[idx], pp: Math.max(0, list[idx].pp-1) }; next[attackerKey] = { ...next[attackerKey], moves: list }; }
+        // also sync to team array if team battle
+        if(next.isTeamBattle){
+          const teamKey = attackerKey==='player' ? 'playerTeam' : 'enemyTeam';
+          const idxKey = attackerKey==='player' ? 'activePlayerIdx' : 'activeEnemyIdx';
+          const t = [...next[teamKey]];
+          const ai = next[idxKey];
+          t[ai] = { ...t[ai], moves: list };
+          next[teamKey] = t;
+        }
         return next;
       });
       await new Promise(r=>setTimeout(r, 30));
@@ -301,69 +354,205 @@ const BattleSimulator = ({ team }) => {
       setSession(prev=>{ if(!prev) return prev; const n={...prev}; n.turn=n.turn==='player'?'enemy':'player'; return n; });
       return 'continue';
     }
-    // hit
     setDamagePop({who:defenderKey, value:`-${dmg}`, eff, isCrit});
     if(isCrit) typewriter(`A critical hit!`);
     else if(eff>1) typewriter(`It's super effective!`);
     else if(eff<1) typewriter(`It's not very effective...`);
     await new Promise(r=>setTimeout(r, 260));
-    // apply damage + handle heal/recoil
+
     let fainted=false;
     let healAmt=0;
     let recoilAmt=0;
+    let defenderFaintedTeam = false;
+    let attackerFaintedTeam = false;
+
     setSession(prev=>{
       if(!prev) return prev;
-      const defNow = prev[defenderKey];
-      let newHp = Math.max(0, defNow.hp - dmg);
-      fainted = newHp===0;
       const next={...prev};
-      next[defenderKey] = { ...defNow, hp:newHp };
-      // heal (Giga Drain etc)
-      if(moveWithPp.heal && !fainted){
-        healAmt = Math.floor(dmg*moveWithPp.heal);
-        const atkNow = prev[attackerKey];
-        next[attackerKey] = { ...atkNow, hp: Math.min(atkNow.maxHp, atkNow.hp + healAmt) };
-      }
-      // recoil
-      if(moveWithPp.recoil && !fainted){
-        recoilAmt = Math.floor(dmg*moveWithPp.recoil);
-      }
-      if(fainted){
-        const win = prev[attackerKey].pokemon;
-        next.winner = win;
-        next.turn='over';
+      if(prev.isTeamBattle){
+        const defTeamKey = defenderKey==='player' ? 'playerTeam' : 'enemyTeam';
+        const defIdxKey = defenderKey==='player' ? 'activePlayerIdx' : 'activeEnemyIdx';
+        const atkTeamKey = attackerKey==='player' ? 'playerTeam' : 'enemyTeam';
+        const atkIdxKey = attackerKey==='player' ? 'activePlayerIdx' : 'activeEnemyIdx';
+        const defTeam = [...prev[defTeamKey]];
+        const atkTeam = [...prev[atkTeamKey]];
+        const defIdx = prev[defIdxKey];
+        const atkIdx = prev[atkIdxKey];
+        const defNow = defTeam[defIdx];
+        const atkNow = atkTeam[atkIdx];
+        let newHp = Math.max(0, defNow.hp - dmg);
+        fainted = newHp===0;
+        defTeam[defIdx] = { ...defNow, hp:newHp };
+        next[defTeamKey]=defTeam;
+        next[defenderKey]={ ...defNow, hp:newHp, pokemon:defNow.pokemon, moves:defNow.moves, maxHp:defNow.maxHp };
+        if(moveWithPp.heal && !fainted){
+          healAmt = Math.floor(dmg*moveWithPp.heal);
+          const newAtkHp = Math.min(atkNow.maxHp, atkNow.hp + healAmt);
+          atkTeam[atkIdx] = { ...atkNow, hp:newAtkHp };
+          next[atkTeamKey]=atkTeam;
+          next[attackerKey]={ ...atkNow, hp:newAtkHp, pokemon:atkNow.pokemon, moves:atkNow.moves, maxHp:atkNow.maxHp };
+        }
+        if(moveWithPp.recoil && !fainted){
+          recoilAmt = Math.floor(dmg*moveWithPp.recoil);
+        }
+        if(fainted){
+          const aliveDef = defTeam.some(m=>m.hp>0);
+          if(!aliveDef){
+            // defender team wiped
+            const winTeam = attackerKey;
+            next.winner = atkTeam.find(m=>m.hp>0)?.pokemon || atkNow.pokemon;
+            next.winnerTeam = winTeam;
+            next.turn='over';
+            defenderFaintedTeam = true;
+          } else {
+            // switch defender to next alive
+            let ni = defIdx+1;
+            while(ni < defTeam.length && defTeam[ni].hp<=0) ni++;
+            if(ni < defTeam.length){
+              next[defIdxKey]=ni;
+              next[defenderKey]=defTeam[ni];
+              next.turn = defenderKey==='enemy' ? 'enemy' : 'player';
+            } else {
+              // find next alive before idx (should not happen if anyAlive)
+              let fi = defTeam.findIndex(m=>m.hp>0);
+              if(fi>=0){ next[defIdxKey]=fi; next[defenderKey]=defTeam[fi]; }
+            }
+            // after switch, turn goes to switched side (defender)
+            // keep turn as defender
+            if(recoilAmt){
+              // recoil on attacker after defender faint + switch still applies?
+              const atkHpAfter = (next[atkTeamKey][atkIdx].hp || atkNow.hp) - recoilAmt;
+              const newAtkHp2 = Math.max(0, atkHpAfter);
+              atkTeam[atkIdx] = { ...atkTeam[atkIdx], hp:newAtkHp2 };
+              next[atkTeamKey]=atkTeam;
+              next[attackerKey]={ ...next[attackerKey], hp:newAtkHp2 };
+              if(newAtkHp2===0){
+                attackerFaintedTeam = true;
+                const aliveAtk = atkTeam.some(m=>m.hp>0);
+                if(!aliveAtk){
+                  next.winner = defTeam.find(m=>m.hp>0)?.pokemon || defTeam[ni]?.pokemon;
+                  next.winnerTeam = defenderKey;
+                  next.turn='over';
+                } else {
+                  let ai2 = atkIdx+1;
+                  while(ai2 < atkTeam.length && atkTeam[ai2].hp<=0) ai2++;
+                  if(ai2 < atkTeam.length){ next[atkIdxKey]=ai2; next[attackerKey]=atkTeam[ai2]; }
+                }
+              }
+            }
+          }
+        } else {
+          next.turn = next.turn==='player' ? 'enemy' : 'player';
+          if(recoilAmt){
+            const atkHpAfter = atkTeam[atkIdx].hp - recoilAmt;
+            const newAtkHp2 = Math.max(0, atkHpAfter);
+            atkTeam[atkIdx] = { ...atkTeam[atkIdx], hp:newAtkHp2 };
+            next[atkTeamKey]=atkTeam;
+            next[attackerKey]={ ...next[attackerKey], hp:newAtkHp2 };
+            if(newAtkHp2===0){
+              attackerFaintedTeam = true;
+              const aliveAtk = atkTeam.some(m=>m.hp>0);
+              if(!aliveAtk){
+                next.winner = defTeam[defIdx]?.pokemon;
+                next.winnerTeam = defenderKey;
+                next.turn='over';
+              } else {
+                let ai2 = atkIdx+1;
+                while(ai2 < atkTeam.length && atkTeam[ai2].hp<=0) ai2++;
+                if(ai2 < atkTeam.length){ next[atkIdxKey]=ai2; next[attackerKey]=atkTeam[ai2]; }
+              }
+            }
+          }
+        }
       } else {
-        next.turn = next.turn==='player' ? 'enemy' : 'player';
-        if(recoilAmt){
-          const atkNow2 = next[attackerKey];
-          next[attackerKey] = { ...atkNow2, hp: Math.max(0, atkNow2.hp - recoilAmt) };
-          if(next[attackerKey].hp===0){ fainted=true; next.winner = prev[defenderKey].pokemon; next.turn='over'; }
+        // 1v1 logic
+        const defNow = prev[defenderKey];
+        let newHp = Math.max(0, defNow.hp - dmg);
+        fainted = newHp===0;
+        const next={...prev};
+        next[defenderKey] = { ...defNow, hp:newHp };
+        if(moveWithPp.heal && !fainted){
+          healAmt = Math.floor(dmg*moveWithPp.heal);
+          const atkNow = prev[attackerKey];
+          next[attackerKey] = { ...atkNow, hp: Math.min(atkNow.maxHp, atkNow.hp + healAmt) };
+        }
+        if(moveWithPp.recoil && !fainted){
+          recoilAmt = Math.floor(dmg*moveWithPp.recoil);
+        }
+        if(fainted){
+          const win = prev[attackerKey].pokemon;
+          next.winner = win;
+          next.turn='over';
+        } else {
+          next.turn = next.turn==='player' ? 'enemy' : 'player';
+          if(recoilAmt){
+            const atkNow2 = next[attackerKey];
+            next[attackerKey] = { ...atkNow2, hp: Math.max(0, atkNow2.hp - recoilAmt) };
+            if(next[attackerKey].hp===0){ fainted=true; next.winner = prev[defenderKey].pokemon; next.turn='over'; }
+          }
         }
       }
       return next;
     });
+
     await new Promise(r=>setTimeout(r, 520));
     if(healAmt) { typewriter(`${attacker.pokemon.name} restored ${healAmt} HP!`); await new Promise(r=>setTimeout(r, 700)); }
     if(recoilAmt) { typewriter(`${attacker.pokemon.name} took ${recoilAmt} recoil damage!`); await new Promise(r=>setTimeout(r, 700)); }
     setAnim(null); setDamagePop(null);
     await new Promise(r=>setTimeout(r, 180));
-    // check faint after recoil
+
     const after = sessionRef.current;
-    if(after && (after.player.hp===0 || after.enemy.hp===0)){
-      const loser = after.player.hp===0 ? after.player : after.enemy;
-      const win = after.player.hp===0 ? after.enemy.pokemon : after.player.pokemon;
-      typewriter(`${loser.pokemon.name} fainted!`);
-      await new Promise(r=>setTimeout(r, 800));
-      typewriter(`${win.name.toUpperCase()} wins!`);
-      const entry={ pokemon1:after.player.pokemon.name, pokemon2:after.enemy.pokemon.name, winner:win.name, timestamp:new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}), mode:battleMode };
-      setHistory(prev=>[entry, ...prev.slice(0,4)]);
-      try{ await recordBattle(after.player.pokemon, after.enemy.pokemon, win);}catch(e){ console.error(e); }
-      setSession(prev=> prev ? {...prev, winner: win, turn:'over'} : prev);
-      return 'fainted';
+    if(!after) return fainted?'fainted':'continue';
+    if(after.isTeamBattle){
+      const pAlive = after.playerTeam.some(m=>m.hp>0);
+      const eAlive = after.enemyTeam.some(m=>m.hp>0);
+      if(!pAlive || !eAlive){
+        const winTeam = !eAlive ? 'player' : 'enemy';
+        const winPoke = winTeam==='player' ? after.playerTeam.find(m=>m.hp>0)?.pokemon || after.player.pokemon : after.enemyTeam.find(m=>m.hp>0)?.pokemon || after.enemy.pokemon;
+        if(defenderFaintedTeam || attackerFaintedTeam || !pAlive || !eAlive){
+          // already handled faint switch, now final win
+        }
+        if(!pAlive || !eAlive){
+          typewriter(`${!eAlive ? after.enemy.pokemon.name : after.player.pokemon.name} and team fainted!`);
+          await new Promise(r=>setTimeout(r, 800));
+          typewriter(`${winPoke.name.toUpperCase()} team wins!`);
+          const entry={ pokemon1:`${after.playerTeam.map(m=>m.pokemon.name).join('+')}`, pokemon2:`${after.enemyTeam.map(m=>m.pokemon.name).join('+')}`, winner: winPoke.name, timestamp:new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}), mode:'team' };
+          setHistory(prev=>[entry, ...prev.slice(0,4)]);
+          try{ await recordBattle({name:`Team ${after.playerTeam.length}`, image:after.playerTeam[0].pokemon.image}, {name:`Team ${after.enemyTeam.length}`, image:after.enemyTeam[0].pokemon.image}, winPoke);}catch(e){ console.error(e); }
+          setSession(prev=> prev ? {...prev, winner: winPoke, winnerTeam: winTeam, turn:'over'} : prev);
+          return 'fainted';
+        }
+      }
+      // if defender fainted but team still alive, we already switched and should log
+      if(fainted && !after.winner){
+        const switchedName = after[defenderKey].pokemon.name;
+        if(switchedName !== defender.pokemon.name){
+          typewriter(`${defender.pokemon.name} fainted! Go! ${switchedName}!`);
+          await new Promise(r=>setTimeout(r, 800));
+          typewriter(`What will ${after.player.pokemon.name} do?`);
+          await new Promise(r=>setTimeout(r, 300));
+        }
+      }
+      if(!fainted && !after.winner) typewriter(`What will ${after.player.pokemon.name} do?`);
+      await new Promise(r=>setTimeout(r, 120));
+      return fainted && after.winner ? 'fainted' : 'continue';
+    } else {
+      if(after && (after.player.hp===0 || after.enemy.hp===0)){
+        const loser = after.player.hp===0 ? after.player : after.enemy;
+        const win = after.player.hp===0 ? after.enemy.pokemon : after.player.pokemon;
+        typewriter(`${loser.pokemon.name} fainted!`);
+        await new Promise(r=>setTimeout(r, 800));
+        typewriter(`${win.name.toUpperCase()} wins!`);
+        const entry={ pokemon1:after.player.pokemon.name, pokemon2:after.enemy.pokemon.name, winner:win.name, timestamp:new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}), mode:battleMode };
+        setHistory(prev=>[entry, ...prev.slice(0,4)]);
+        try{ await recordBattle(after.player.pokemon, after.enemy.pokemon, win);}catch(e){ console.error(e); }
+        setSession(prev=> prev ? {...prev, winner: win, turn:'over'} : prev);
+        return 'fainted';
+      }
+      if(!fainted) typewriter(`What will ${sessionRef.current?.player.pokemon.name} do?`);
+      await new Promise(r=>setTimeout(r, 120));
+      return 'continue';
     }
-    if(!fainted) typewriter(`What will ${sessionRef.current?.player.pokemon.name} do?`);
-    await new Promise(r=>setTimeout(r, 120));
-    return 'continue';
   };
 
   const handlePlayerMove = async (move) => {
@@ -441,7 +630,7 @@ const BattleSimulator = ({ team }) => {
         <div className="battle-arena-head">
           <button className="btn-refresh" onClick={resetSession} style={{height:32, padding:'0 10px', fontSize:'.78rem'}}><X size={12}/> Run</button>
           <span className="pill" style={{fontSize:'.72rem'}}><Timer size={12}/> Turn {session.turnCount} • {session.winner ? 'Finished' : session.turn==='player' ? 'Your move' : 'Foe thinking…'}</span>
-          <span className="pill" style={{fontSize:'.72rem', background: session.winner ? (session.winner.id===session.player.pokemon.id?'#22c55e':'#ef4444') : '#fff', color: session.winner ? '#fff' : undefined}}>{session.winner ? `Winner: ${session.winner.name}` : `${session.player.pokemon.name} vs ${session.enemy.pokemon.name}`}</span>
+          <span className="pill" style={{fontSize:'.72rem', background: session.winner ? ((session.isTeamBattle ? session.winnerTeam==='player' : session.winner.id===session.player.pokemon.id)?'#22c55e':'#ef4444') : '#fff', color: session.winner ? '#fff' : undefined}}>{session.winner ? `Winner: ${session.isTeamBattle ? (session.winnerTeam==='player' ? 'Your Team — ' : 'Enemy Team — ') : ''}${session.winner.name}` : session.isTeamBattle ? `Team Battle • ${session.playerTeam.filter(m=>m.hp>0).length} vs ${session.enemyTeam.filter(m=>m.hp>0).length}` : `${session.player.pokemon.name} vs ${session.enemy.pokemon.name}`}</span>
         </div>
 
         <div className={`battle-stage realistic-stage ${anim?.who==='player' ? 'shake-enemy' : ''} ${anim?.who==='enemy' ? 'shake-player' : ''}`}>
@@ -531,6 +720,31 @@ const BattleSimulator = ({ team }) => {
             </div>
           </div>
 
+          {session.isTeamBattle && (
+            <div className="team-rosters">
+              <div className="roster-label"><Shield size={12} style={{display:'inline', verticalAlign:-1}}/> Enemy Squad — {session.enemyTeam.filter(m=>m.hp>0).length}/{session.enemyTeam.length} alive</div>
+              <div className="roster-row">
+                {session.enemyTeam.map((m,i)=>(
+                  <div key={m.pokemon.id} className={`roster-mini ${i===session.activeEnemyIdx?'active':''} ${m.hp===0?'fainted':''}`}>
+                    <img src={m.pokemon.image} alt={m.pokemon.name} />
+                    <span>{m.pokemon.name}</span>
+                    <div className="mini-hp"><div className="fill" style={{width:`${(m.hp/m.maxHp)*100}%`, background: m.hp===0?'#94a3b8': m.hp/m.maxHp<0.25?'#ef4444': m.hp/m.maxHp<0.5?'#f59e0b':'#22c55e'}}/></div>
+                  </div>
+                ))}
+              </div>
+              <div className="roster-label" style={{marginTop:6}}><Crown size={12} style={{display:'inline', verticalAlign:-1}}/> Your Squad — {session.playerTeam.filter(m=>m.hp>0).length}/{session.playerTeam.length} alive</div>
+              <div className="roster-row">
+                {session.playerTeam.map((m,i)=>(
+                  <div key={m.pokemon.id} className={`roster-mini ${i===session.activePlayerIdx?'active':''} ${m.hp===0?'fainted':''}`}>
+                    <img src={m.pokemon.image} alt={m.pokemon.name} />
+                    <span>{m.pokemon.name}</span>
+                    <div className="mini-hp"><div className="fill" style={{width:`${(m.hp/m.maxHp)*100}%`}}/></div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="battle-log realistic-log">
             <div className="dialog-cursor">▶</div>
             <AnimatePresence mode="wait">
@@ -591,11 +805,11 @@ const BattleSimulator = ({ team }) => {
               )}
             </>
           ) : (
-            <div className="battle-result" style={{margin:12, borderColor: session.winner.id===session.player.pokemon.id ? '#22c55e' : '#ef4444', background: session.winner.id===session.player.pokemon.id ? 'linear-gradient(135deg,#f0fdf4,#fff)' : 'linear-gradient(135deg,#fef2f2,#fff)'}}>
-              <div style={{display:'inline-flex', alignItems:'center', gap:6, background: session.winner.id===session.player.pokemon.id ? '#22c55e' : '#ef4444', color:'#fff', padding:'4px 10px', borderRadius:999, fontWeight:900, fontSize:'.76rem'}}>
-                <Trophy size={14}/> {session.winner.id===session.player.pokemon.id ? 'YOU WIN!' : 'YOU LOST'}
+            <div className="battle-result" style={{margin:12, borderColor: (session.isTeamBattle ? session.winnerTeam==='player' : session.winner.id===session.player.pokemon.id) ? '#22c55e' : '#ef4444', background: (session.isTeamBattle ? session.winnerTeam==='player' : session.winner.id===session.player.pokemon.id) ? 'linear-gradient(135deg,#f0fdf4,#fff)' : 'linear-gradient(135deg,#fef2f2,#fff)'}}>
+              <div style={{display:'inline-flex', alignItems:'center', gap:6, background: (session.isTeamBattle ? session.winnerTeam==='player' : session.winner.id===session.player.pokemon.id) ? '#22c55e' : '#ef4444', color:'#fff', padding:'4px 10px', borderRadius:999, fontWeight:900, fontSize:'.76rem'}}>
+                <Trophy size={14}/> {(session.isTeamBattle ? session.winnerTeam==='player' : session.winner.id===session.player.pokemon.id) ? 'YOU WIN!' : 'YOU LOST'}
               </div>
-              <h3 className="winner" style={{marginTop:8}}>{session.winner.name.toUpperCase()} wins!</h3>
+              <h3 className="winner" style={{marginTop:8}}>{session.winner.name.toUpperCase()} {session.isTeamBattle ? 'TEAM WINS!' : 'wins!'}</h3>
               <img src={session.winner.image} alt={session.winner.name} className="winner-image" style={{width:110, height:110}}/>
               <div style={{display:'flex', gap:8, justifyContent:'center', marginTop:10}}>
                 <button className="cta-btn" onClick={resetSession}>Battle Again</button>
@@ -608,7 +822,7 @@ const BattleSimulator = ({ team }) => {
     );
   }
 
-  // SELECTOR MODE — simple wizard (less confusing)
+  // SELECTOR — team squad vs wild wizard
   const getRarity = (p) => {
     const total = p.stats?.reduce((s,x)=>s+x.base,0) || 0;
     if(total>580 || ['mewtwo','rayquaza','lugia','ho-oh','dialga','palkia','giratina','mew','celebi'].includes(p.name)) return { label:'Legendary', color:'#f59e0b', bg:'linear-gradient(135deg,#fef3c7,#fde68a)' };
@@ -616,8 +830,117 @@ const BattleSimulator = ({ team }) => {
     if(total>380) return { label:'Uncommon', color:'#0ea5e9', bg:'linear-gradient(135deg,#e0f2fe,#bae6fd)' };
     return { label:'Common', color:'#64748b', bg:'linear-gradient(135deg,#f1f5f9,#e2e8f0)' };
   };
-  const step = !pokemon1 ? 1 : !pokemon2 ? 2 : 3;
 
+  if(battleMode==='team'){
+    const myPower = team.reduce((s,p)=>s+(p.stats?.reduce((a,x)=>a+x.base,0)||0),0);
+    const myAvg = team.length? Math.round(myPower/team.length):0;
+    const oppPower = opponentTeam.reduce((s,p)=>s+(p.stats?.reduce((a,x)=>a+x.base,0)||0),0);
+    const isReady = team.length>0 && opponentTeam.length>0;
+    return (
+      <div className="battle-simulator draft-mode wizard">
+        <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', gap:10, flexWrap:'wrap'}}>
+          <h2><Swords size={16}/> Team Battle</h2>
+          <span className="pill" style={{fontSize:'.74rem'}}><Shield size={12}/> Squad vs Squad • {team.length} vs {opponentTeam.length}</span>
+        </div>
+
+        <div className="battle-mode-toggle" style={{margin:'12px auto', display:'flex', justifyContent:'center'}}>
+          <button className={`mode-btn ${battleMode==='wild'?'active':''}`} onClick={()=>setBattleMode('wild')}>Wild Encounter</button>
+          <button className={`mode-btn ${battleMode==='team'?'active':''}`} onClick={()=>setBattleMode('team')}>Team Battle</button>
+        </div>
+
+        <div className="squad-stage">
+          <div className="squad-panel">
+            <div className="squad-head">
+              <h3><Crown size={14}/> Your Squad</h3>
+              <span className="pill" style={{fontSize:'.72rem'}}><Heart size={12}/> {team.length}/6 • {myPower} PWR</span>
+            </div>
+            {team.length===0 ? (
+              <div className="empty-team"><p>Need at least 1 Pokémon. Catch in Discover!</p></div>
+            ) : (
+              <>
+                <div className="squad-grid">
+                  {team.map((p,i)=>(
+                    <div key={p.id} className={`squad-card ${i===0?'lead':''}`}>
+                      {i===0 && <span className="lead-badge"><Crown size={10}/> LEAD</span>}
+                      <span className="squad-num">#{i+1}</span>
+                      <img src={p.image} alt={p.name} />
+                      <div className="squad-info">
+                        <b>{p.name}</b>
+                        <span>{p.types.join('/') } • {calcHP(p.stats?.find(s=>s.name==='hp')?.base||55)} HP • {getStat(p,'speed')} SPD</span>
+                        <div className="squad-types">{p.types.map(t=><span key={t} className={`type-badge type-${t}`} style={{fontSize:'.52rem', padding:'2px 6px'}}>{t}</span>)}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="squad-foot"><span>Avg {myAvg} PWR</span><span>{team.length===6?'Full squad':'Add more in Discover'}</span></div>
+              </>
+            )}
+          </div>
+
+          <div className="vs-column team-vs">
+            <div className="vs-ring"><span className="vs-mini">VS</span><div className="vs-pulse"/><div className="vs-pulse delay"/></div>
+            <div className="squad-vs-stats">
+              <div className="vs-stat"><span>Power</span><b>{myPower} : {oppPower}</b><div className="vs-bar"><div className="a" style={{width:`${myPower+oppPower? (myPower/(myPower+oppPower))*100:50}%`, background: myPower>oppPower?'#22c55e': myPower<oppPower?'#ef4444':'#94a3b8'}}/></div></div>
+              <div className="vs-stat"><span>Size</span><b>{team.length} vs {opponentTeam.length}</b></div>
+              <div className={`edge ${myPower>oppPower?'player': myPower<oppPower?'enemy':'even'}`} style={{marginTop:6}}>{myPower===oppPower?'Even squads': myPower>oppPower?'Your team stronger':'Enemy team stronger'}</div>
+            </div>
+            <button className={`battle-button draft-cta ${!isReady?'disabled':''}`} onClick={startBattle} disabled={!isReady}>
+              {isReady ? `Start Team Battle — ${team.length} vs ${opponentTeam.length} →` : 'Waiting for squads…'} <Swords size={16}/>
+            </button>
+            <p className="cta-hint" style={{marginTop:6}}><Activity size={10}/> Auto-switch on faint • First alive leads</p>
+          </div>
+
+          <div className="squad-panel">
+            <div className="squad-head">
+              <h3><Zap size={14}/> Enemy Squad</h3>
+              <div style={{display:'flex', gap:6}}>
+                <span className="pill" style={{fontSize:'.72rem'}}>{opponentTeam.length} wild</span>
+                <button className="btn-refresh" onClick={()=>generateOpponentTeam()} disabled={isLoading} style={{height:28, fontSize:'.72rem', padding:'0 10px'}}><RefreshCw size={12}/> Reroll</button>
+              </div>
+            </div>
+            {isLoading ? (
+              <div className="skeleton-grid" style={{gridTemplateColumns:'repeat(2,1fr)', marginTop:8}}><div className="skeleton-card" style={{height:96}}/><div className="skeleton-card" style={{height:96}}/><div className="skeleton-card" style={{height:96}}/><div className="skeleton-card" style={{height:96}}/></div>
+            ) : opponentTeam.length===0 ? (
+              <div className="empty-team"><p>Generating wild squad…</p></div>
+            ) : (
+              <>
+                <div className="squad-grid">
+                  {opponentTeam.map((p,i)=>(
+                    <div key={p.id} className="squad-card">
+                      <span className="squad-num">#{i+1}</span>
+                      <span className="rarity small" style={{background:getRarity(p).bg, color:getRarity(p).color, borderColor:getRarity(p).color, position:'absolute', top:6, right:6, fontSize:'.52rem'}}>{getRarity(p).label}</span>
+                      <img src={p.image} alt={p.name} />
+                      <div className="squad-info">
+                        <b>{p.name}</b>
+                        <span>{p.types.join('/')} • {calcHP(p.stats?.find(s=>s.name==='hp')?.base||55)} HP</span>
+                        <div className="squad-types">{p.types.map(t=><span key={t} className={`type-badge type-${t}`} style={{fontSize:'.52rem', padding:'2px 6px'}}>{t}</span>)}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="squad-foot"><span>Wild team • Lv.50 each</span><span>Tap Reroll for new foes</span></div>
+              </>
+            )}
+          </div>
+        </div>
+
+        <div style={{marginTop:10, display:'flex', gap:6, flexWrap:'wrap'}}>
+          <span className="pill" style={{fontSize:'.72rem'}}><Shield size={12}/> Team battle: 1 active at a time • faint → next alive auto-switches</span>
+          <span className="pill" style={{fontSize:'.72rem'}}><Heart size={12}/> Your bench shown during battle</span>
+        </div>
+
+        {history.length>0 && (
+          <div className="battle-history">
+            <h4>Recent battles</h4>
+            <ul>{history.map((b,i)=>(<li key={i}><span className="battle-pokemon">{b.pokemon1}</span> vs <span className="battle-pokemon">{b.pokemon2}</span> → <span className="battle-winner">{b.winner}</span> <span className="battle-time">{b.timestamp}</span> <span className="battle-mode">{b.mode}</span></li>))}</ul>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // WILD — 3-step wizard
+  const step = !pokemon1 ? 1 : !pokemon2 ? 2 : 3;
   return (
     <div className="battle-simulator draft-mode wizard">
       <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', gap:10, flexWrap:'wrap'}}>
@@ -629,14 +952,14 @@ const BattleSimulator = ({ team }) => {
       <div className="wizard-stepper">
         <div className={`w-step ${step>=1?'active':''} ${step>1?'done':''}`}><span>{step>1 ? '✓' : '1'}</span><b>Your Fighter</b><small>{pokemon1 ? pokemon1.name : 'Choose'}</small></div>
         <div className={`w-line ${step>1?'on':''}`} />
-        <div className={`w-step ${step>=2?'active':''} ${step>2?'done':''}`}><span>{step>2 ? '✓' : '2'}</span><b>Opponent</b><small>{pokemon2 ? pokemon2.name : battleMode==='wild' ? 'Wild' : 'Team'}</small></div>
+        <div className={`w-step ${step>=2?'active':''} ${step>2?'done':''}`}><span>{step>2 ? '✓' : '2'}</span><b>Opponent</b><small>{pokemon2 ? pokemon2.name : 'Wild'}</small></div>
         <div className={`w-line ${step>2?'on':''}`} />
         <div className={`w-step ${step===3?'active':''}`}><span>3</span><b>Battle</b><small>Start</small></div>
       </div>
 
       <div className="battle-mode-toggle" style={{margin:'12px auto', display:'flex', justifyContent:'center'}}>
         <button className={`mode-btn ${battleMode==='wild'?'active':''}`} onClick={()=>{setBattleMode('wild'); setPokemon2(null);}}>Wild Encounter</button>
-        <button className={`mode-btn ${battleMode==='team'?'active':''}`} onClick={()=>{setBattleMode('team'); setPokemon2(null);}}>Team Battle</button>
+        <button className={`mode-btn ${battleMode==='team'?'active':''}`} onClick={()=>setBattleMode('team')}>Team Battle</button>
       </div>
 
       {/* STEP 1 — pick your fighter */}
@@ -689,60 +1012,34 @@ const BattleSimulator = ({ team }) => {
           <button className="btn-refresh" onClick={()=>setPokemon1(null)} style={{alignSelf:'flex-start', marginBottom:4}}><ChevronRight size={12} style={{transform:'rotate(180deg)'}}/> Back to fighter</button>
 
           <div className="wizard-head" style={{marginTop:14}}>
-            <h3>{battleMode==='wild' ? <><Zap size={16}/> Step 2 — Choose wild opponent</> : <><Swords size={16}/> Step 2 — Choose team foe</>}</h3>
-            <p>{battleMode==='wild' ? 'Tap one wild card to challenge. Shuffle for new faces.' : 'Tap a teammate (not your fighter) to battle.'}</p>
+            <h3><Zap size={16}/> Step 2 — Choose wild opponent</h3>
+            <p>Tap one wild card to challenge. Shuffle for new faces.</p>
           </div>
 
-          {battleMode==='wild' ? (
-            <>
-              <div className="wild-toolbar">
-                <div className="wild-search"><Search size={12}/> Lv.50 • rarity by power</div>
-                <button className="btn-refresh" onClick={refreshWild} disabled={isLoading} style={{height:32, fontSize:'.76rem'}}><RefreshCw size={12}/> Shuffle</button>
-              </div>
-              <div className="wild-grid wizard-grid">
-                {wildPokemon.map(w=>{
-                  const hp=calcHP(w.stats?.find(s=>s.name==='hp')?.base||55);
-                  const rarity=getRarity(w);
-                  const sel = pokemon2?.id===w.id;
-                  return (
-                    <motion.button key={w.id} onClick={()=>setPokemon2(prev=> prev?.id===w.id ? null : w)} className={`wild-card wizard-card ${sel?'selected':''}`} whileHover={{y:-2}} whileTap={{scale:.98}} style={{borderColor: sel ? typeColor(w.types[0]) : undefined}}>
-                      <span className="rarity" style={{background: rarity.bg, color: rarity.color, borderColor: rarity.color}}>{rarity.label}</span>
-                      {sel && <span className="select-check">✓</span>}
-                      <div className="wild-img" style={{background:`radial-gradient(180px 90px at 50% 18%, ${typeColor(w.types[0])}18, transparent 70%)`}}>
-                        <img src={w.image} alt={w.name} />
-                      </div>
-                      <div className="wild-name">{w.name} <span>Lv.50</span></div>
-                      <div className="wild-types">{w.types.map(t=><span key={t} className={`type-badge type-${t}`} style={{fontSize:'.52rem', padding:'2px 6px'}}>{t}</span>)}</div>
-                      <div className="wild-stats"><span>{hp} HP</span><span>{getStat(w,'speed')} SPD</span></div>
-                      <div className="pick-cta">{sel ? 'Selected — tap to deselect' : 'Challenge'} <ChevronRight size={12}/></div>
-                    </motion.button>
-                  );
-                })}
-              </div>
-            </>
-          ) : (
-            <div className="fighter-grid wizard-grid">
-              {team.filter(p=> p.id!==pokemon1.id).map(p=>{
-                const hp=calcHP(p.stats?.find(s=>s.name==='hp')?.base||55);
-                const sel = pokemon2?.id===p.id;
-                return (
-                  <motion.button key={p.id} onClick={()=>setPokemon2(prev=> prev?.id===p.id ? null : p)} className={`fighter-card wizard-card ${sel?'selected':''}`} whileHover={{y:-2}} whileTap={{scale:.98}} style={{borderColor: sel ? typeColor(p.types[0]) : undefined}}>
-                    {sel && <span className="select-check">✓</span>}
-                    <div className="fighter-img"><img src={p.image} alt={p.name}/><span className="card-num">#{String(p.id).padStart(4,'0')}</span></div>
-                    <div className="fighter-body">
-                      <div className="fighter-name">{p.name}</div>
-                      <div className="fighter-types">{p.types.map(t=><span key={t} className={`type-badge type-${t}`} style={{fontSize:'.54rem', padding:'2px 6px'}}>{t}</span>)}</div>
-                      <div className="fighter-stats"><span><Heart size={10}/> {hp} HP</span><span>{getStat(p,'speed')} SPD</span></div>
-                    </div>
-                    <div className="pick-cta">{sel ? 'Selected — tap to deselect' : 'Challenge'} <ChevronRight size={12}/></div>
-                  </motion.button>
-                );
-              })}
-              {team.filter(p=> p.id!==pokemon1.id).length===0 && (
-                <div className="empty-team" style={{gridColumn:'1/-1'}}><p>Need 2+ Pokémon for Team Battle. Catch more!</p></div>
-              )}
-            </div>
-          )}
+          <div className="wild-toolbar">
+            <div className="wild-search"><Search size={12}/> Lv.50 • rarity by power</div>
+            <button className="btn-refresh" onClick={refreshWild} disabled={isLoading} style={{height:32, fontSize:'.76rem'}}><RefreshCw size={12}/> Shuffle</button>
+          </div>
+          <div className="wild-grid wizard-grid">
+            {wildPokemon.map(w=>{
+              const hp=calcHP(w.stats?.find(s=>s.name==='hp')?.base||55);
+              const rarity=getRarity(w);
+              const sel = pokemon2?.id===w.id;
+              return (
+                <motion.button key={w.id} onClick={()=>setPokemon2(prev=> prev?.id===w.id ? null : w)} className={`wild-card wizard-card ${sel?'selected':''}`} whileHover={{y:-2}} whileTap={{scale:.98}} style={{borderColor: sel ? typeColor(w.types[0]) : undefined}}>
+                  <span className="rarity" style={{background: rarity.bg, color: rarity.color, borderColor: rarity.color}}>{rarity.label}</span>
+                  {sel && <span className="select-check">✓</span>}
+                  <div className="wild-img" style={{background:`radial-gradient(180px 90px at 50% 18%, ${typeColor(w.types[0])}18, transparent 70%)`}}>
+                    <img src={w.image} alt={w.name} />
+                  </div>
+                  <div className="wild-name">{w.name} <span>Lv.50</span></div>
+                  <div className="wild-types">{w.types.map(t=><span key={t} className={`type-badge type-${t}`} style={{fontSize:'.52rem', padding:'2px 6px'}}>{t}</span>)}</div>
+                  <div className="wild-stats"><span>{hp} HP</span><span>{getStat(w,'speed')} SPD</span></div>
+                  <div className="pick-cta">{sel ? 'Selected — tap to deselect' : 'Challenge'} <ChevronRight size={12}/></div>
+                </motion.button>
+              );
+            })}
+          </div>
           <div style={{display:'flex', gap:8, marginTop:10, flexWrap:'wrap'}}>
             <button className="btn-refresh" onClick={()=>setPokemon1(null)}><ChevronRight size={12} style={{transform:'rotate(180deg)'}}/> Back</button>
             <button className="btn-refresh" onClick={()=>setPokemon2(null)} disabled={!pokemon2} style={{opacity: pokemon2?1:.5}}><X size={12}/> Clear opponent</button>

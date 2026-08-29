@@ -887,6 +887,40 @@ a{color:inherit;text-decoration:none}
   cursor:pointer; padding:0; box-shadow:var(--shadow-xs); transition:all .15s;
 }
 .wild-card:hover{ transform:translateY(-2px); box-shadow:var(--shadow-sm)}
+.squad-stage{ display:grid; grid-template-columns:1fr 320px 1fr; gap:14px; align-items:start; margin-top:14px}
+@media(max-width:1100px){ .squad-stage{ grid-template-columns:1fr 260px 1fr } }
+@media(max-width:860px){ .squad-stage{ grid-template-columns:1fr; } .squad-stage .vs-column{ order:2 } }
+.squad-panel{ background:var(--surface); border:1.5px solid var(--line); border-radius:18px; padding:12px; box-shadow:var(--shadow-xs); display:flex; flex-direction:column; gap:10px}
+.squad-head{ display:flex; align-items:center; justify-content:space-between; gap:8px; padding-bottom:10px; border-bottom:1px solid var(--line)}
+.squad-head h3{ font-family:'Space Grotesk',sans-serif; font-size:.92rem; font-weight:900; display:flex; align-items:center; gap:6px}
+.squad-grid{ display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:10px}
+@media(max-width:520px){ .squad-grid{ grid-template-columns:1fr } }
+.squad-card{ position:relative; background:#fff; border:1.5px solid var(--line); border-radius:14px; padding:8px; display:flex; gap:8px; align-items:center; text-align:left}
+.squad-card.lead{ border-color:var(--primary); background:linear-gradient(135deg, #fffbeb, #fff); box-shadow:0 0 0 3px rgba(245,158,11,.14)}
+.lead-badge{ position:absolute; top:6px; left:6px; font-size:.56rem; font-weight:900; letter-spacing:.06em; background:var(--primary); color:#0f172a; padding:1px 6px; border-radius:999px; border:1px solid #eab308; display:flex; align-items:center; gap:3px}
+.squad-num{ position:absolute; top:6px; right:6px; font-size:.60rem; font-weight:900; background:var(--surface-2); border:1px solid var(--line); padding:1px 6px; border-radius:999px; color:var(--muted)}
+.squad-card img{ width:56px; height:56px; object-fit:contain; filter:drop-shadow(0 6px 10px rgba(15,23,42,.10)); flex:0 0 auto}
+.squad-info{ flex:1; min-width:0; display:flex; flex-direction:column; gap:3px}
+.squad-info b{ font-size:.84rem; font-weight:900; text-transform:capitalize; line-height:1}
+.squad-info span{ font-size:.68rem; font-weight:700; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.squad-types{ display:flex; gap:3px; flex-wrap:wrap}
+.squad-foot{ display:flex; justify-content:space-between; align-items:center; font-size:.72rem; font-weight:800; color:var(--muted); background:var(--surface-2); border:1px solid var(--line); border-radius:10px; padding:6px 10px; margin-top:4px}
+.squad-vs-stats{ background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:10px; display:flex; flex-direction:column; gap:8px}
+.vs-stat{ display:flex; flex-direction:column; gap:4px; font-size:.72rem; font-weight:800}
+.vs-stat span:first-child{ font-size:.66rem; letter-spacing:.06em; text-transform:uppercase; color:var(--muted)}
+.vs-stat b{ font-size:.78rem}
+.team-rosters{ background:linear-gradient(180deg, #f8fafc, #fff); border-top:1px solid var(--line); border-bottom:1px solid var(--line); padding:10px 12px; display:flex; flex-direction:column; gap:8px}
+.roster-label{ font-size:.68rem; font-weight:900; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); display:flex; align-items:center; gap:6px}
+.roster-row{ display:flex; gap:6px; overflow-x:auto; scrollbar-width:thin; padding-bottom:2px}
+.roster-row::-webkit-scrollbar{ height:6px}
+.roster-mini{ flex:0 0 86px; background:#fff; border:1.5px solid var(--line); border-radius:12px; padding:6px; text-align:center; transition:all .15s; position:relative}
+.roster-mini.active{ border-color:var(--secondary); box-shadow:0 0 0 3px rgba(59,76,202,.14); transform:translateY(-1px)}
+.roster-mini.fainted{ opacity:.42; filter:grayscale(1); background:var(--surface-2)}
+.roster-mini img{ width:42px; height:42px; object-fit:contain; margin:0 auto; filter:drop-shadow(0 4px 8px rgba(15,23,42,.08))}
+.roster-mini span{ font-size:.66rem; font-weight:800; text-transform:capitalize; display:block; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.roster-mini .mini-hp{ height:4px; background:#e2e8f0; border-radius:999px; overflow:hidden; margin-top:4px; border:1px solid #cbd5e1}
+.roster-mini .mini-hp .fill{ height:100%; border-radius:999px; transition:width .4s}
+.squad-stage .vs-column.team-vs{ gap:10px}
 .wild-card.selected{ border-color:var(--secondary); box-shadow:0 0 0 3px rgba(59,76,202,.14)}
 .wild-img{ height:92px; display:grid; place-items:center; position:relative}
 .wild-img img{ width:78px; height:78px; object-fit:contain; filter:drop-shadow(0 8px 14px rgba(15,23,42,.12))}
