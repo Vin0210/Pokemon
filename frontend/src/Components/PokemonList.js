@@ -1,10 +1,17 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, X, Eye, Sparkles, Zap, Crown, Filter, ArrowLeft, ArrowRight, Flame, Droplets, Leaf, CloudLightning } from 'lucide-react';
-import { getPokemonList, getPokemonDetails } from '../Services/pokeapi';
+import { Search, X, Eye, Sparkles, Zap, Crown, Filter, ArrowLeft, ArrowRight, Flame, Droplets, Leaf, CloudLightning, Layers, ArrowUpDown } from 'lucide-react';
+import { getPokemonList, getPokemonDetails, getPokemonByType } from '../Services/pokeapi';
 import { addToTeam } from '../Services/teamService';
 
 const CATEGORY_OPTIONS = ['All', 'Starter', 'Legendary', 'Mythical', 'Gen 1', 'Gen 2', 'Other'];
+const ALL_TYPES = ['fire', 'water', 'grass', 'electric', 'normal', 'bug', 'dark', 'dragon', 'fairy', 'fighting', 'flying', 'ghost', 'ground', 'ice', 'poison', 'psychic', 'rock', 'steel'];
+const SORT_OPTIONS = [
+  { value: 'number', label: '№ Lowest first' },
+  { value: 'number-desc', label: '№ Highest first' },
+  { value: 'name-asc', label: 'Name A → Z' },
+  { value: 'name-desc', label: 'Name Z → A' },
+];
 
 const typeGradient = (type) => {
   const map = {
@@ -61,6 +68,9 @@ const PokemonList = ({ team, setTeam }) => {
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
+  const [selectedType, setSelectedType] = useState('');
+  const [sortBy, setSortBy] = useState('number');
+  const [typePokemonIds, setTypePokemonIds] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPokemon, setTotalPokemon] = useState(0);
   const [selectedPokemon, setSelectedPokemon] = useState(null);
@@ -109,9 +119,31 @@ const PokemonList = ({ team, setTeam }) => {
   useEffect(() => {
     let filtered = allPokemon.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()));
     if (selectedCategory) filtered = filtered.filter(p => p.category === selectedCategory);
+    if (selectedType && typePokemonIds) {
+      const typeSet = new Set(typePokemonIds);
+      filtered = filtered.filter(p => typeSet.has(p.id));
+    }
+    // sort
+    filtered = [...filtered].sort((a, b) => {
+      if (sortBy === 'name-asc') return a.name.localeCompare(b.name);
+      if (sortBy === 'name-desc') return b.name.localeCompare(a.name);
+      if (sortBy === 'number-desc') return b.id - a.id;
+      return a.id - b.id; // number asc (default)
+    });
     setFilteredPokemon(filtered);
     setCurrentPage(1);
-  }, [searchTerm, selectedCategory, allPokemon]);
+  }, [searchTerm, selectedCategory, selectedType, typePokemonIds, sortBy, allPokemon]);
+
+  // lightweight type lookup via PokéAPI (cached per selection)
+  useEffect(() => {
+    let cancelled = false;
+    if (!selectedType) { setTypePokemonIds(null); return; }
+    setTypePokemonIds(null); // show "filtering…" until the set resolves
+    getPokemonByType(selectedType)
+      .then(ids => { if (!cancelled) setTypePokemonIds(ids); })
+      .catch(err => { if (!cancelled) console.error('Failed to load type filter:', err); });
+    return () => { cancelled = true; };
+  }, [selectedType]);
 
   useEffect(() => {
     if (showConfetti && catchType) {
@@ -206,6 +238,36 @@ const PokemonList = ({ team, setTeam }) => {
   const paginate = (pageNumber) => {
     setCurrentPage(pageNumber);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const lastFocusedRef = useRef(null);
+
+  const openModal = (p) => {
+    lastFocusedRef.current = document.activeElement;
+    setSelectedPokemon(p);
+  };
+
+  const closeModal = () => {
+    setSelectedPokemon(null);
+    if (lastFocusedRef.current) requestAnimationFrame(() => lastFocusedRef.current?.focus?.());
+  };
+
+  // Esc closes the detail modal + lock background scroll while open
+  useEffect(() => {
+    if (!selectedPokemon) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const onKey = (e) => { if (e.key === 'Escape') closeModal(); };
+    window.addEventListener('keydown', onKey);
+    return () => { document.body.style.overflow = prevOverflow; window.removeEventListener('keydown', onKey); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedPokemon]);
+
+  const resetFilters = () => {
+    setSearchTerm('');
+    setSelectedCategory('');
+    setSelectedType('');
+    setSortBy('number');
   };
 
   const handleAddToTeam = async (pokemon) => {
@@ -323,9 +385,39 @@ const PokemonList = ({ team, setTeam }) => {
                 );
               })}
             </div>
+
+            <div className={`type-filter-row ${selectedType ? 'has-filter' : ''}`}>
+              <span className="type-row-label"><Layers size={13} /> Type</span>
+              {ALL_TYPES.map(t => {
+                const typeActive = selectedType === t;
+                return (
+                  <button
+                    key={t}
+                    className={`chip type-chip type-${t} ${typeActive ? 'active' : ''}`}
+                    onClick={() => setSelectedType(typeActive ? '' : t)}
+                    aria-pressed={typeActive}
+                    title={`Only show ${t}-type Pokémon`}
+                    style={typeActive ? { background: typeGradient(t), borderColor: 'transparent', color: '#fff' } : { '--c': typeGradient(t) }}
+                  >
+                    {t}
+                  </button>
+                );
+              })}
+              {selectedType && (
+                <button className="chip type-chip-clear" onClick={() => setSelectedType('')}>
+                  <X size={12} /> Clear
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="filters-right">
+            <div className="dropdown-wrap" title="Sort results">
+              <ArrowUpDown size={14} className="sort-icon" />
+              <select className="dropdown sort-select" value={sortBy} onChange={(e) => setSortBy(e.target.value)} aria-label="Sort Pokémon">
+                {SORT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+            </div>
             <div className="count-badge">
               <Filter size={14} style={{ color: '#3b4cca' }} />
               <span>Showing <strong>{filteredPokemon.length.toLocaleString()}</strong> of {totalPokemon.toLocaleString()}</span>
@@ -362,12 +454,20 @@ const PokemonList = ({ team, setTeam }) => {
                     <div className="type-accent" style={{ background: typeGradient(primary), opacity: .12 }} />
                     <span className="pokemon-id">#{String(p.id).padStart(4, '0')}</span>
                     <div className="card-actions-top">
-                      <button className="icon-btn" onClick={() => setSelectedPokemon(p)} aria-label={`View ${p.name}`}>
+                      <button className="icon-btn" onClick={() => openModal(p)} aria-label={`View ${p.name}`}>
                         <Eye size={14} />
                       </button>
                     </div>
                     <div className="pokeball-watermark" aria-hidden />
-                    <div className="pokemon-image-container">
+                    <div
+                      className="pokemon-image-container"
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => openModal(p)}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openModal(p); } }}
+                      aria-label={`Open ${p.name} details`}
+                      title={`View ${p.name} details`}
+                    >
                       <img src={p.image} alt={p.name} className="pokemon-image" loading="lazy" />
                       {/* TYPE FIRE BURST */}
                       <AnimatePresence>
@@ -456,7 +556,7 @@ const PokemonList = ({ team, setTeam }) => {
                         </span>
                         {inTeam ? 'Caught' : isCatching ? 'Catching…' : 'Catch'}
                       </button>
-                      <button className="btn info-button" onClick={() => setSelectedPokemon(p)}>
+                      <button className="btn info-button" onClick={() => openModal(p)}>
                         Info
                       </button>
                     </div>
@@ -467,10 +567,26 @@ const PokemonList = ({ team, setTeam }) => {
           </AnimatePresence>
         </div>
 
-        {filteredPokemon.length === 0 && !pageLoading && (
-          <div className="empty-team" style={{ marginTop: 16 }}>
-            <p>No Pokémon matches <b>“{searchTerm}”</b> {selectedCategory && `in ${selectedCategory}`}. Try a different search.</p>
-            <button className="cta-btn" onClick={() => { setSearchTerm(''); setSelectedCategory(''); }}>Clear filters</button>
+        {filteredPokemon.length === 0 && !pageLoading && !(selectedType && !typePokemonIds) && (
+          <div className="empty-state">
+            <div className="empty-state-art" aria-hidden>
+              <div className="empty-state-poke">?</div>
+              <div className="loading-pokeball" style={{ width: 54, height: 54 }} />
+            </div>
+            <h3>Gotta catch… something!</h3>
+            <p>
+              {searchTerm && <>No matches for <b>“{searchTerm}”</b>. </>}
+              {selectedCategory && <>Nothing found in <b>{selectedCategory}</b>. </>}
+              {selectedType && <><b className={`type-badge type-${selectedType}`}>{selectedType}</b> is all around — but not here. </>}
+              {!searchTerm && !selectedCategory && !selectedType && 'No Pokémon match your current view. '}
+              Try widening your filters.
+            </p>
+            <div className="empty-state-actions">
+              {searchTerm && <button className="chip" onClick={() => setSearchTerm('')}>Clear search</button>}
+              {selectedCategory && <button className="chip" onClick={() => setSelectedCategory('')}>Clear category</button>}
+              {selectedType && <button className="chip" onClick={() => setSelectedType('')}>Clear type</button>}
+              <button className="chip chip-reset" onClick={resetFilters}>Reset all filters</button>
+            </div>
           </div>
         )}
 
@@ -511,7 +627,7 @@ const PokemonList = ({ team, setTeam }) => {
                 </div>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                   <span className="pokemon-detail-id">#{String(selectedPokemon.id).padStart(4, '0')}</span>
-                  <button className="modal-close-x" onClick={() => setSelectedPokemon(null)} aria-label="Close">
+                  <button className="modal-close-x" onClick={closeModal} aria-label="Close">
                     <X size={16} />
                   </button>
                 </div>
@@ -567,7 +683,21 @@ const PokemonList = ({ team, setTeam }) => {
                     </div>
                   </div>
 
-                  <button className="close-button" onClick={() => setSelectedPokemon(null)}>Close Pokédex</button>
+                  <div className="modal-actions">
+                    <button
+                      className="btn cta-btn modal-catch-btn"
+                      onClick={() => { const p = selectedPokemon; closeModal(); handleAddToTeam(p); }}
+                      disabled={catchAnimation === selectedPokemon.id || team.some(m => m.id === selectedPokemon.id)}
+                      style={{ flex: 1 }}
+                    >
+                      {team.some(m => m.id === selectedPokemon.id) ? (
+                        <><span className="modal-pokeball caught" aria-hidden /> Already caught</>
+                      ) : (
+                        <><span className="modal-pokeball" aria-hidden /> Catch this Pokémon</>
+                      )}
+                    </button>
+                    <button className="close-button" style={{ flex: '0 0 auto' }} onClick={closeModal}>Close</button>
+                  </div>
                 </div>
               </div>
             </motion.div>

@@ -11,3 +11,8 @@ export const getPokemonDetails = async (id) => {
   const response = await axios.get(`${API_BASE}/pokemon/${id}`);
   return response.data;
 };
+
+export const getPokemonByType = async (type) => {
+  const response = await axios.get(`${API_BASE}/type/${type}`);
+  return response.data.pokemon.map(p => Number(p.pokemon.url.split('/').filter(Boolean).pop()));
+};

@@ -1,14 +1,20 @@
 import { useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Crown, Trash2, Zap, Heart, Shield, Sparkles, X } from 'lucide-react';
+import { Crown, Trash2, Zap, Heart, Shield, Sparkles, X, Compass } from 'lucide-react';
 import { removeFromTeam } from '../Services/teamService';
 
 const typeHex = { fire:'#ff3d00', water:'#3b82f6', grass:'#22c55e', electric:'#eab308', psychic:'#ec4899', ice:'#06b6d4', dragon:'#7c3aed', fairy:'#f472b6', normal:'#a8a29e', poison:'#a855f7', ground:'#ca8a04', flying:'#818cf8', bug:'#84cc16', rock:'#78716c', ghost:'#6b7280', steel:'#64748b', fighting:'#dc2626', dark:'#44403c' };
+const ALL_TYPES = ['fire', 'water', 'grass', 'electric', 'normal', 'bug', 'dark', 'dragon', 'fairy', 'fighting', 'flying', 'ghost', 'ground', 'ice', 'poison', 'psychic', 'rock', 'steel'];
 
-const Team = ({ team, setTeam }) => {
+const Team = ({ team, setTeam, onNavigate }) => {
   const [releasingId, setReleasingId] = useState(null);
   const totalPower = useMemo(() => team.reduce((acc, p) => acc + (p.stats?.reduce((a, s) => a + s.base, 0) || 0), 0), [team]);
   const avgPower = team.length ? Math.round(totalPower / team.length) : 0;
+  const coverage = useMemo(() => {
+    const covered = new Set();
+    team.forEach(p => (p.types || []).forEach(t => covered.add(t)));
+    return covered;
+  }, [team]);
 
   const handleRemove = async (pokemon) => {
     if (releasingId) return;
@@ -65,6 +71,24 @@ const Team = ({ team, setTeam }) => {
         </div>
       </div>
 
+      <div className="coverage-panel" title="Types present on your squad">
+        <div className="coverage-head">
+          <span className="coverage-title"><Shield size={14} /> Your types</span>
+          <span className="coverage-count"><b>{coverage.size}</b> type{coverage.size === 1 ? '' : 's'}</span>
+        </div>
+        {coverage.size === 0 ? (
+          <p className="coverage-empty">Catch some Pokémon to see their types here.</p>
+        ) : (
+          <div className="coverage-grid">
+            {ALL_TYPES.filter(t => coverage.has(t)).map(t => (
+              <span key={t} title={`${t}-type on your squad`} className={`type-coverage-dot type-${t}`}>
+                {t}<span className="coverage-check">✓</span>
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+
       {team.length === 0 ? (
         <div className="empty-team">
           <div style={{ width: 56, height: 56, borderRadius: 999, background: '#fff', border: '1px solid #e2e8f0', display: 'grid', placeItems: 'center', boxShadow: '0 4px 12px rgba(15,23,42,.06)' }}>
@@ -73,6 +97,9 @@ const Team = ({ team, setTeam }) => {
           <h3 style={{ fontWeight: 900, fontSize: '1.05rem' }}>Your team is empty</h3>
           <p>Head to <b>Discover</b> and catch your first Pokémon. Tip: try a Starter like <b>Charmander</b> or <b>Bulbasaur</b>.</p>
           <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/25.png" alt="Pikachu" style={{ width: 110, marginTop: 4 }} />
+          <button className="cta-btn empty-team-cta" onClick={() => onNavigate?.('browse')} style={{ marginTop: 14 }}>
+            <Compass size={16} /> Go catch one
+          </button>
         </div>
       ) : (
         <div className="team-members">
@@ -164,12 +191,18 @@ const Team = ({ team, setTeam }) => {
           })}
 
           {Array.from({ length: Math.max(0, 6 - team.length) }).map((_, i) => (
-            <div key={`empty-${i}`} style={{ border: '1.5px dashed #cbd5e1', borderRadius: 18, background: 'rgba(255,255,255,.6)', display: 'grid', placeItems: 'center', padding: 18, minHeight: 196, color: '#94a3b8', fontWeight: 700, textAlign: 'center' }}>
-              <div>
-                <div style={{ width: 44, height: 44, borderRadius: 999, background: '#f8fafc', border: '1px solid #e2e8f0', display: 'grid', placeItems: 'center', margin: '0 auto 8px' }}>＋</div>
-                Empty slot<br /><span style={{ fontSize: '.78rem', fontWeight: 600 }}>Catch to fill</span>
-              </div>
-            </div>
+            <button
+              key={`empty-${i}`}
+              type="button"
+              className="empty-slot"
+              onClick={() => onNavigate?.('browse')}
+              aria-label="Add a Pokémon — go to Discover"
+              title="Catch a Pokémon to fill this slot"
+            >
+              <div className="empty-slot-plus">＋</div>
+              Empty slot
+              <span>Catch to fill →</span>
+            </button>
           ))}
         </div>
       )}

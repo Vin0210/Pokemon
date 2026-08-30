@@ -24,6 +24,15 @@ function App() {
     fetchTeam();
   }, []);
 
+  // Reset scroll on every tab switch so users always land at the top of the view
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [activeTab]);
+
+  const handleNavigate = (tab) => {
+    setActiveTab(tab);
+  };
+
   return (
     <div className="app-shell">
       <Header />
@@ -75,7 +84,7 @@ function App() {
             {activeTab === 'browse' ? (
               <PokemonList team={team} setTeam={setTeam} />
             ) : activeTab === 'team' ? (
-              <Team team={team} setTeam={setTeam} />
+              <Team team={team} setTeam={setTeam} onNavigate={handleNavigate} />
             ) : (
               <div className="battle-page">
                 <BattleSimulator team={team} />

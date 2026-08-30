@@ -194,6 +194,8 @@ const BattleSimulator = ({ team }) => {
   const [battleMode, setBattleMode] = useState('wild');
   const [isLoading, setIsLoading] = useState(true);
   const [history, setHistory] = useState([]);
+  const [leadId, setLeadId] = useState(null);
+  const [scout, setScout] = useState(null);
   const [session, setSession] = useState(null);
   const [anim, setAnim] = useState(null);
   const [damagePop, setDamagePop] = useState(null);
@@ -201,6 +203,7 @@ const BattleSimulator = ({ team }) => {
   const [menu, setMenu] = useState('main'); // main | fight | bag
   const [hoveredMove, setHoveredMove] = useState(null);
   const sessionRef = useRef(null);
+  const busyRef = useRef(false);
   useEffect(()=>{ sessionRef.current = session; }, [session]);
 
   const generateOpponentTeam = async (size) => {
@@ -241,7 +244,10 @@ const BattleSimulator = ({ team }) => {
   const startBattle = () => {
     if(battleMode==='team'){
       if(team.length===0 || opponentTeam.length===0) return;
-      const pTeam = team.map(p=>({ pokemon:p, hp:calcHP(p.stats?.find(s=>s.name==='hp')?.base||55), maxHp:calcHP(p.stats?.find(s=>s.name==='hp')?.base||55), moves:getMovesForTypes(p.types) }));
+      // put chosen leader first so they open the battle
+      const lead = leadId ? team.find(p=>p.id===leadId) : null;
+      const ordered = lead ? [...team.filter(p=>p.id!==leadId), lead] : team;
+      const pTeam = ordered.map(p=>({ pokemon:p, hp:calcHP(p.stats?.find(s=>s.name==='hp')?.base||55), maxHp:calcHP(p.stats?.find(s=>s.name==='hp')?.base||55), moves:getMovesForTypes(p.types) }));
       const eTeam = opponentTeam.map(p=>({ pokemon:p, hp:calcHP(p.stats?.find(s=>s.name==='hp')?.base||55), maxHp:calcHP(p.stats?.find(s=>s.name==='hp')?.base||55), moves:getMovesForTypes(p.types) }));
       const sess = {
         isTeamBattle:true,
@@ -470,7 +476,6 @@ const BattleSimulator = ({ team }) => {
         const defNow = prev[defenderKey];
         let newHp = Math.max(0, defNow.hp - dmg);
         fainted = newHp===0;
-        const next={...prev};
         next[defenderKey] = { ...defNow, hp:newHp };
         if(moveWithPp.heal && !fainted){
           healAmt = Math.floor(dmg*moveWithPp.heal);
@@ -558,52 +563,57 @@ const BattleSimulator = ({ team }) => {
 
   const handlePlayerMove = async (move) => {
     const cur = sessionRef.current;
-    if(!cur || cur.winner || cur.turn!=='player' || anim) return;
-    // determine enemy move early for speed order
-    const enemyMove = chooseEnemyMove(cur.enemy);
-    const pSpeed = getStat(cur.player.pokemon,'speed');
-    const eSpeed = getStat(cur.enemy.pokemon,'speed');
-    const pPri = move.priority||0;
-    const ePri = enemyMove.priority||0;
-    let order;
-    if(pPri!==ePri) order = pPri>ePri ? ['player','enemy'] : ['enemy','player'];
-    else if(pSpeed!==eSpeed) order = pSpeed>eSpeed ? ['player','enemy'] : ['enemy','player'];
-    else order = Math.random()<0.5 ? ['player','enemy'] : ['enemy','player'];
+    if(!cur || cur.winner || cur.turn!=='player' || anim || busyRef.current) return;
+    busyRef.current = true;
+    try {
+      // determine enemy move early for speed order
+      const enemyMove = chooseEnemyMove(cur.enemy);
+      const pSpeed = getStat(cur.player.pokemon,'speed');
+      const eSpeed = getStat(cur.enemy.pokemon,'speed');
+      const pPri = move.priority||0;
+      const ePri = enemyMove.priority||0;
+      let order;
+      if(pPri!==ePri) order = pPri>ePri ? ['player','enemy'] : ['enemy','player'];
+      else if(pSpeed!==eSpeed) order = pSpeed>eSpeed ? ['player','enemy'] : ['enemy','player'];
+      else order = Math.random()<0.5 ? ['player','enemy'] : ['enemy','player'];
 
-    setMenu('main');
-    // clear preview and announce order so it's not confusing who attacks first
-    setHoveredMove(null);
-    const orderReason = pPri!==ePri ? `Priority ${pPri} vs ${ePri}` : `Speed ${pSpeed} vs ${eSpeed}`;
-    const firstName = order[0]==='player' ? cur.player.pokemon.name : cur.enemy.pokemon.name;
-    if(order[0]==='enemy'){
-      typewriter(`Foe's ${firstName} is faster (${orderReason}) — foe strikes first!`);
-      await new Promise(r=>setTimeout(r, 950));
-    } else {
-      typewriter(`${firstName} moves first! (${orderReason})`);
-      await new Promise(r=>setTimeout(r, 650));
-    }
-    // execute in order
-    for(const who of order){
-      const afterCheck = sessionRef.current;
-      if(!afterCheck || afterCheck.winner) break;
-      if(who==='player'){
-        const res = await doAttack('player','enemy', move);
-        if(res==='fainted') break;
-        // if player was slower and enemy already attacked this round, don't attack again
-        if(order[0]==='enemy' && who==='player' && afterCheck.enemy.hp===0) break;
+      setMenu('main');
+      // clear preview and announce order so it's not confusing who attacks first
+      setHoveredMove(null);
+      const orderReason = pPri!==ePri ? `Priority ${pPri} vs ${ePri}` : `Speed ${pSpeed} vs ${eSpeed}`;
+      const firstName = order[0]==='player' ? cur.player.pokemon.name : cur.enemy.pokemon.name;
+      if(order[0]==='enemy'){
+        typewriter(`Foe's ${firstName} is faster (${orderReason}) — foe strikes first!`);
+        await new Promise(r=>setTimeout(r, 950));
       } else {
-        const res = await doAttack('enemy','player', enemyMove);
-        if(res==='fainted') break;
+        typewriter(`${firstName} moves first! (${orderReason})`);
+        await new Promise(r=>setTimeout(r, 650));
       }
-      // small gap between the two attacks in same round
-      if(order.length===2 && who===order[0]){
-        const mid = sessionRef.current;
-        if(mid && !mid.winner) await new Promise(r=>setTimeout(r, 300));
-        else break;
+      // execute in order
+      for(const who of order){
+        const afterCheck = sessionRef.current;
+        if(!afterCheck || afterCheck.winner) break;
+        if(who==='player'){
+          const res = await doAttack('player','enemy', move);
+          if(res==='fainted') break;
+          // if player was slower and enemy already attacked this round, don't attack again
+          if(order[0]==='enemy' && who==='player' && afterCheck.enemy.hp===0) break;
+        } else {
+          const res = await doAttack('enemy','player', enemyMove);
+          if(res==='fainted') break;
+        }
+        // small gap between the two attacks in same round
+        if(order.length===2 && who===order[0]){
+          const mid = sessionRef.current;
+          if(mid && !mid.winner) await new Promise(r=>setTimeout(r, 300));
+          else break;
+        }
       }
+      // increment turn
+      setSession(prev=> prev && !prev.winner ? {...prev, turn:'player', turnCount:(prev.turnCount||1)+1 } : prev);
+    } finally {
+      busyRef.current = false;
     }
-    // increment turn
-    setSession(prev=> prev && !prev.winner ? {...prev, turn:'player', turnCount:(prev.turnCount||1)+1 } : prev);
   };
 
   const refreshWild = async()=>{
@@ -646,15 +656,20 @@ const BattleSimulator = ({ team }) => {
         </div>
 
         <div className={`battle-stage realistic-stage ${anim?.who==='player' ? 'shake-enemy' : ''} ${anim?.who==='enemy' ? 'shake-player' : ''}`}>
+          <div className="arena-particles">
+            {[...Array(6)].map((_,i)=><motion.div key={i} className="arena-dot" animate={{ y:[-8,8,-8], opacity:[.2,.4,.2] }} transition={{ duration:3+i*.5, repeat:Infinity, ease:'easeInOut' }} style={{ left:`${12+i*14}%`, top:`${15+(i%3)*25}%` }}/>)}
+          </div>
           <div className="battle-field realistic-field">
             {/* Enemy */}
             <div className={`combatant enemy ${anim?.who==='enemy' ? 'attacking' : ''} ${damagePop?.who==='enemy' ? 'hit' : ''} ${session.enemy.hp===0 ? 'fainted' : ''}`}>
-              <div className="hp-card classic">
+              <div className="hp-card classic enemy-hp">
+                <div className="hp-card-glow" />
                 <div className="hp-top">
                   <span className="hp-name">{session.enemy.pokemon.name} <span className="hp-lv">:L{50}</span> <span className="hp-gender">{session.enemy.pokemon.id%2===0?'♂':'♀'}</span></span>
-                  <span className="hp-num">{session.enemy.hp}/{session.enemy.maxHp}</span>
+                  <motion.span className="hp-num" key={`e-${session.enemy.hp}-${session.enemy.maxHp}`} initial={{scale:1.18, color:'#ef4444'}} animate={{scale:1, color:'#64748b'}} transition={{duration:.4}}>{session.enemy.hp}/{session.enemy.maxHp}</motion.span>
                 </div>
                 <div className="hp-bar-classic"><div className="hp-bar-track"><motion.div className={`hp-bar-fill ${enemyLow ? 'low' : enemyPct<50 ? 'mid' : ''}`} animate={{width:`${enemyPct}%`}} transition={{duration:.55, ease:[0.22,1,0.36,1]}} /><motion.div className="hp-bar-delay" animate={{width:`${enemyPct}%`}} transition={{duration:.85, delay:.12}} /></div><span className="hp-label">HP</span></div>
+                <div className="hp-types">{session.enemy.pokemon.types?.map(t=><span key={t} className={`mini-type ${t}`}>{t}</span>)}</div>
                 <div className="hp-exp"><div className="exp-bar"><div className="exp-fill" style={{width:'62%'}}/></div><span>Exp.</span></div>
               </div>
               <div className="sprite-wrap realistic">
@@ -666,9 +681,9 @@ const BattleSimulator = ({ team }) => {
                   animate={
                     anim?.who==='enemy' ? { x: -36, y: -4, scale: 1.07 } :
                     anim?.who==='player' && damagePop?.who==='enemy' ? { x: [0, -7, 7, -5, 0], transition:{duration:.34} } :
-                    { x:0, y:0, scale:1 }
+                    { x:0, y:[0,-4,0], scale:1 }
                   }
-                  transition={{type:'spring', stiffness:520, damping:20}}
+                  transition={anim?.who ? {type:'spring', stiffness:520, damping:20} : {duration:2.4, repeat:Infinity, ease:'easeInOut'}}
                   style={{ filter: session.enemy.hp===0 ? 'grayscale(1) brightness(.8)' : undefined }}
                 />
                 {damagePop?.who==='enemy' && (
@@ -690,7 +705,10 @@ const BattleSimulator = ({ team }) => {
               </div>
             </div>
 
-            <div className="battle-divider"><span className="vs-mini">VS</span></div>
+            <div className="battle-divider">
+              <motion.span className="vs-mini" animate={{ scale:[1,1.08,1], boxShadow:['0 6px 14px rgba(15,23,42,.18)','0 6px 22px rgba(255,203,5,.35)','0 6px 14px rgba(15,23,42,.18)'] }} transition={{duration:2.6, repeat:Infinity, ease:'easeInOut'}}>VS</motion.span>
+              <div className="vs-trail" />
+            </div>
 
             {/* Player */}
             <div className={`combatant player ${anim?.who==='player' ? 'attacking' : ''} ${damagePop?.who==='player' ? 'hit' : ''} ${session.player.hp===0 ? 'fainted' : ''}`}>
@@ -703,9 +721,9 @@ const BattleSimulator = ({ team }) => {
                   animate={
                     anim?.who==='player' ? { x: 36, y: -4, scale: 1.07 } :
                     anim?.who==='enemy' && damagePop?.who==='player' ? { x: [0, 7, -7, 5, 0], transition:{duration:.34} } :
-                    { x:0, y:0, scale:1 }
+                    { x:0, y:[0,-4,0], scale:1 }
                   }
-                  transition={{type:'spring', stiffness:520, damping:20}}
+                  transition={anim?.who ? {type:'spring', stiffness:520, damping:20} : {duration:2.4, repeat:Infinity, ease:'easeInOut'}}
                   style={{ transform: 'scaleX(-1)', filter: session.player.hp===0 ? 'grayscale(1) brightness(.8)' : undefined }}
                 />
                 {damagePop?.who==='player' && (
@@ -722,11 +740,13 @@ const BattleSimulator = ({ team }) => {
                 {session.player.hp===0 && <div className="faint-overlay">FAINTED</div>}
               </div>
               <div className="hp-card classic player-hp">
+                <div className="hp-card-glow player-glow" />
                 <div className="hp-top">
                   <span className="hp-name">{session.player.pokemon.name} <span className="hp-lv">:L{50}</span> <span className="hp-gender">{session.player.pokemon.id%2===0?'♀':'♂'}</span></span>
-                  <span className="hp-num">{session.player.hp}/{session.player.maxHp}</span>
+                  <motion.span className="hp-num" key={`p-${session.player.hp}-${session.player.maxHp}`} initial={{scale:1.18, color:'#ef4444'}} animate={{scale:1, color:'#64748b'}} transition={{duration:.4}}>{session.player.hp}/{session.player.maxHp}</motion.span>
                 </div>
                 <div className="hp-bar-classic"><div className="hp-bar-track"><motion.div className={`hp-bar-fill ${playerLow ? 'low' : playerPct<50 ? 'mid' : ''}`} animate={{width:`${playerPct}%`}} transition={{duration:.55}} /><motion.div className="hp-bar-delay" animate={{width:`${playerPct}%`}} transition={{duration:.85, delay:.12}} /></div><span className="hp-label">HP</span></div>
+                <div className="hp-types">{session.player.pokemon.types?.map(t=><span key={t} className={`mini-type ${t}`}>{t}</span>)}</div>
                 <div className="hp-exp"><div className="exp-bar"><div className="exp-fill" style={{width: session.winner ? '100%' : '48%'}}/></div><span>Exp.</span></div>
               </div>
             </div>
@@ -834,17 +854,17 @@ const BattleSimulator = ({ team }) => {
               )}
             </>
           ) : (
-            <div className="battle-result" style={{margin:12, borderColor: (session.isTeamBattle ? session.winnerTeam==='player' : session.winner.id===session.player.pokemon.id) ? '#22c55e' : '#ef4444', background: (session.isTeamBattle ? session.winnerTeam==='player' : session.winner.id===session.player.pokemon.id) ? 'linear-gradient(135deg,#f0fdf4,#fff)' : 'linear-gradient(135deg,#fef2f2,#fff)'}}>
-              <div style={{display:'inline-flex', alignItems:'center', gap:6, background: (session.isTeamBattle ? session.winnerTeam==='player' : session.winner.id===session.player.pokemon.id) ? '#22c55e' : '#ef4444', color:'#fff', padding:'4px 10px', borderRadius:999, fontWeight:900, fontSize:'.76rem'}}>
+            <motion.div className="battle-result" initial={{opacity:0, scale:.92}} animate={{opacity:1, scale:1}} transition={{duration:.5, ease:[0.22,1,0.36,1]}} style={{margin:12, borderColor: (session.isTeamBattle ? session.winnerTeam==='player' : session.winner.id===session.player.pokemon.id) ? '#22c55e' : '#ef4444', background: (session.isTeamBattle ? session.winnerTeam==='player' : session.winner.id===session.player.pokemon.id) ? 'linear-gradient(135deg,#f0fdf4,#fff)' : 'linear-gradient(135deg,#fef2f2,#fff)'}}>
+              <motion.div initial={{y:-12, opacity:0}} animate={{y:0, opacity:1}} transition={{delay:.2}} style={{display:'inline-flex', alignItems:'center', gap:6, background: (session.isTeamBattle ? session.winnerTeam==='player' : session.winner.id===session.player.pokemon.id) ? '#22c55e' : '#ef4444', color:'#fff', padding:'5px 12px', borderRadius:999, fontWeight:900, fontSize:'.82rem'}}>
                 <Trophy size={14}/> {(session.isTeamBattle ? session.winnerTeam==='player' : session.winner.id===session.player.pokemon.id) ? 'YOU WIN!' : 'YOU LOST'}
-              </div>
-              <h3 className="winner" style={{marginTop:8}}>{session.winner.name.toUpperCase()} {session.isTeamBattle ? 'TEAM WINS!' : 'wins!'}</h3>
-              <img src={session.winner.image} alt={session.winner.name} className="winner-image" style={{width:110, height:110}}/>
-              <div style={{display:'flex', gap:8, justifyContent:'center', marginTop:10}}>
+              </motion.div>
+              <motion.h3 className="winner" initial={{y:8, opacity:0}} animate={{y:0, opacity:1}} transition={{delay:.35}} style={{marginTop:10}}>{session.winner.name.toUpperCase()} {session.isTeamBattle ? 'TEAM WINS!' : 'wins!'}</motion.h3>
+              <motion.img src={session.winner.image} alt={session.winner.name} className="winner-image" initial={{scale:.6, opacity:0}} animate={{scale:1, opacity:1}} transition={{delay:.45, type:'spring', stiffness:300, damping:18}} style={{width:120, height:120}}/>
+              <motion.div initial={{y:8, opacity:0}} animate={{y:0, opacity:1}} transition={{delay:.6}} style={{display:'flex', gap:8, justifyContent:'center', marginTop:12}}>
                 <button className="cta-btn" onClick={resetSession}>Battle Again</button>
                 <button className="btn-refresh" onClick={()=>{ resetSession(); setPokemon2(null); setPokemon1(null); }}>Change Team</button>
-              </div>
-            </div>
+              </motion.div>
+            </motion.div>
           )}
         </div>
       </div>
@@ -861,11 +881,34 @@ const BattleSimulator = ({ team }) => {
   };
 
   if(battleMode==='team'){
-    const myPower = team.reduce((s,p)=>s+(p.stats?.reduce((a,x)=>a+x.base,0)||0),0);
-    const oppPower = opponentTeam.reduce((s,p)=>s+(p.stats?.reduce((a,x)=>a+x.base,0)||0),0);
+    const powerOf = (p)=> p.stats?.reduce((a,x)=>a+x.base,0)||0;
+    const myPower = team.reduce((s,p)=>s+powerOf(p),0);
+    const oppPower = opponentTeam.reduce((s,p)=>s+powerOf(p),0);
     const isReady = team.length>0 && opponentTeam.length>0;
+    const totalPower = myPower+oppPower;
+    const powerPct = totalPower===0?50:Math.round((myPower/totalPower)*100);
+    const lead = leadId ? team.find(p=>p.id===leadId) : team[0];
+
+    // pick the member of your team with the best offensive matchup vs a scouted foe
+    const bestCounter = (enemy)=>{
+      if(!enemy) return null;
+      let best=null, bestScore=-999;
+      for(const p of team){
+        let off=1, def=1;
+        for(const et of (enemy.types||[])){
+          for(const pt of (p.types||[])){
+            off *= (TYPE_CHART[pt]?.[et]||1);
+            def *= Math.max(1,(TYPE_CHART[et]?.[pt]||1));
+          }
+        }
+        const score = off/(def||1) + powerOf(p)/2000;
+        if(score>bestScore){ bestScore=score; best=p; }
+      }
+      return best;
+    };
+
     return (
-      <div className="battle-simulator draft-mode wizard">
+      <div className="battle-simulator draft-mode wizard team-draft">
         <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', gap:10, flexWrap:'wrap'}}>
           <h2><Swords size={16}/> Team Battle</h2>
           <span className="pill" style={{fontSize:'.74rem'}}><Shield size={12}/> Squad vs Squad • {team.length} vs {opponentTeam.length}</span>
@@ -876,25 +919,70 @@ const BattleSimulator = ({ team }) => {
           <button className={`mode-btn ${battleMode==='team'?'active':''}`} onClick={()=>setBattleMode('team')}>Team Battle</button>
         </div>
 
-        <div className="squad-stage clean">
-          <div className="squad-panel clean">
-            <div className="squad-head clean">
+        {/* Power overview */}
+        <div className="td-overview">
+          <div className="td-side mine">
+            {lead?.image ? (
+              <img className="td-lead-avatar" src={lead.image} alt={lead.name} />
+            ) : (
+              <span className="td-lead-avatar empty"><Swords size={16}/></span>
+            )}
+            <span className="td-side-txt">
+              <b>{lead ? lead.name : 'Your Team'}</b>
+              <small>{lead ? 'Leader' : team.length ? 'Pick a leader' : 'No team'}</small>
+            </span>
+            <span className="td-pwr-num mine-num">{myPower.toLocaleString()}</span>
+          </div>
+
+          <div className="td-mid">
+            <div className="td-power-bar">
+              <div className="td-fill mine-fill" style={{width:`${powerPct}%`}}/>
+            </div>
+            <span className="td-edge">{myPower>oppPower?'Power edge: You': myPower<oppPower?'Power edge: Foe':'Even match'}</span>
+          </div>
+
+          <div className="td-side foe">
+            <span className="td-pwr-num foe-num">{oppPower.toLocaleString()}</span>
+            <div className="td-team-stack">
+              {opponentTeam.slice(0,3).map(p=><img key={p.id} src={p.image} alt={p.name} title={p.name}/>)}
+              {opponentTeam.length>3 && <i>+{opponentTeam.length-3}</i>}
+            </div>
+            <small className="td-side-txt foe-txt">Enemy Squad</small>
+          </div>
+        </div>
+
+        <div className="squad-stage">
+          {/* YOUR SQUAD */}
+          <div className="squad-panel">
+            <div className="squad-head">
               <h3><Crown size={14}/> Your Squad</h3>
               <span className="pill small">{team.length}/6</span>
             </div>
             {team.length===0 ? (
               <div className="empty-team"><p>Need at least 1 Pokémon. Catch in Discover!</p></div>
             ) : (
-              <div className="squad-grid clean">
-                {team.map((p,i)=>(
-                  <div key={p.id} className={`squad-card clean ${i===0?'lead':''}`}>
-                    {i===0 && <span className="lead-badge">LEAD</span>}
-                    <img src={p.image} alt={p.name} />
-                    <b>{p.name}</b>
-                    <span className="squad-sub">{p.types.join(' • ')}</span>
-                  </div>
-                ))}
-              </div>
+              <>
+                <p className="td-hint"><Crown size={11}/> Tap a card to pick your leader — they start the battle.</p>
+                <div className="squad-grid">
+                  {team.map((p,i)=>{
+                    const isLead = leadId ? leadId===p.id : i===0;
+                    return (
+                      <button type="button" key={p.id} onClick={()=>setLeadId(p.id)}
+                        className={`td-squad-card ${isLead?'lead':''}`} style={{'--tc':typeColor(p.types[0])}}
+                        aria-pressed={isLead} title={isLead?'Leader — starts the battle':'Set as leader'}>
+                        {isLead && <span className="td-lead-badge"><Crown size={9}/> LEAD</span>}
+                        <span className="td-num">{i+1}</span>
+                        <img src={p.image} alt={p.name}/>
+                        <span className="td-card-info">
+                          <b>{p.name}</b>
+                          <span className="td-types">{p.types.map(t=><i key={t} className={`type-badge type-${t}`}>{t}</i>)}</span>
+                        </span>
+                        <span className="td-pwr"><b>{powerOf(p)}</b><small>PWR</small></span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
             )}
           </div>
 
@@ -909,24 +997,68 @@ const BattleSimulator = ({ team }) => {
             </button>
           </div>
 
-          <div className="squad-panel clean">
-            <div className="squad-head clean">
+          <div className="squad-panel">
+            <div className="squad-head">
               <h3><Zap size={14}/> Enemy Squad</h3>
               <button className="btn-refresh small" onClick={()=>generateOpponentTeam()} disabled={isLoading}><RefreshCw size={12}/> Reroll</button>
             </div>
             {isLoading ? (
               <div className="skeleton-grid" style={{gridTemplateColumns:'repeat(2,1fr)', marginTop:8}}><div className="skeleton-card" style={{height:84}}/><div className="skeleton-card" style={{height:84}}/><div className="skeleton-card" style={{height:84}}/><div className="skeleton-card" style={{height:84}}/></div>
             ) : (
-              <div className="squad-grid clean">
-                {opponentTeam.map((p,i)=>(
-                  <div key={p.id} className="squad-card clean">
-                    <span className="rarity tiny" style={{background:getRarity(p).bg, color:getRarity(p).color}}>{getRarity(p).label}</span>
-                    <img src={p.image} alt={p.name} />
-                    <b>{p.name}</b>
-                    <span className="squad-sub">{p.types.join(' • ')}</span>
-                  </div>
-                ))}
-              </div>
+              <>
+                <p className="td-hint"><Search size={11}/> Tap a foe to scout its matchup.</p>
+                <div className="squad-grid">
+                  {opponentTeam.map((p,i)=>(
+                    <button type="button" key={p.id} onClick={()=>setScout(scout?.id===p.id?null:p)}
+                      className={`td-enemy-card ${scout?.id===p.id?'selected':''}`} style={{'--tc':typeColor(p.types[0])}}
+                      aria-pressed={scout?.id===p.id} title="Scout this Pokémon">
+                      <img src={p.image} alt={p.name}/>
+                      <span className="td-card-info">
+                        <span className="td-rarity" style={{background:getRarity(p).bg, color:getRarity(p).color}}>{getRarity(p).label}</span>
+                        <b>{p.name}</b>
+                        <span className="td-types">{p.types.map(t=><i key={t} className={`type-badge type-${t}`}>{t}</i>)}</span>
+                      </span>
+                      <span className="td-pwr"><b>{powerOf(p)}</b><small>PWR</small></span>
+                    </button>
+                  ))}
+                </div>
+                {scout && (()=>{
+                  const c = bestCounter(scout);
+                  const cEff = c ? c.types.reduce((acc,ct)=>acc*(scout.types.reduce((a,et)=>a*(TYPE_CHART[ct]?.[et]||1),1)),1) : 1;
+                  return (
+                    <div className="td-scout">
+                      <div className="td-scout-head">
+                        <img src={scout.image} alt={scout.name}/>
+                        <div className="td-scout-name">
+                          <b>{scout.name}</b>
+                          <small>{scout.types.join(' • ')} • PWR {powerOf(scout)}</small>
+                        </div>
+                        <button className="modal-close-x" style={{width:28,height:28}} onClick={()=>setScout(null)} aria-label="Close scout"><X size={14}/></button>
+                      </div>
+                      <div className="td-scout-bars">
+                        {scout.stats.slice(0,6).map(s=>(
+                          <div key={s.name} className="td-bar">
+                            <span>{s.name.toUpperCase().slice(0,3)}</span>
+                            <div className="td-bar-track"><div style={{width:`${Math.min(100,(s.base/150)*100)}%`}}/></div>
+                            <b>{s.base}</b>
+                          </div>
+                        ))}
+                      </div>
+                      {c ? (
+                        <div className="td-reco">
+                          <small><Sparkles size={10}/> Best counter in your squad</small>
+                          <div className="td-reco-poke">
+                            <img src={c.image} alt={c.name}/>
+                            <span><b>{c.name}</b><em>{cEff>=1.5?'Super effective! ':(cEff>1?'Good matchup':'Neutral')} • PWR {powerOf(c)}</em></span>
+                          </div>
+                        </div>
+                      ) : team.length===0 && (
+                        <div className="td-reco empty"><small>Add Pokémon to see matchup advice.</small></div>
+                      )}
+                    </div>
+                  );
+                })()}
+              </>
             )}
           </div>
         </div>
