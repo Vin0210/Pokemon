@@ -4,6 +4,7 @@ import { Search, Users, Swords } from 'lucide-react';
 import PokemonList from './Components/PokemonList';
 import Team from './Components/Team';
 import BattleSimulator from './Components/BattleSimulator';
+import PvpBattle from './Components/PvpBattle';
 import Header from './Components/Header';
 import { getTeam } from './Services/teamService';
 import './App.css';
@@ -11,6 +12,7 @@ import './App.css';
 function App() {
   const [team, setTeam] = useState([]);
   const [activeTab, setActiveTab] = useState('browse');
+  const [battleMode, setBattleMode] = useState('solo'); // solo | pvp
 
   useEffect(() => {
     const fetchTeam = async () => {
@@ -87,7 +89,11 @@ function App() {
               <Team team={team} setTeam={setTeam} onNavigate={handleNavigate} />
             ) : (
               <div className="battle-page">
-                <BattleSimulator team={team} />
+                <div className="battle-mode-toggle">
+                  <button className={`battle-mode-btn ${battleMode === 'solo' ? 'active' : ''}`} onClick={() => setBattleMode('solo')}><Swords size={14} /> Solo</button>
+                  <button className={`battle-mode-btn ${battleMode === 'pvp' ? 'active' : ''}`} onClick={() => setBattleMode('pvp')}><Users size={14} /> PvP (2 devices)</button>
+                </div>
+                {battleMode === 'pvp' ? <PvpBattle team={team} /> : <BattleSimulator team={team} />}
               </div>
             )}
           </motion.div>

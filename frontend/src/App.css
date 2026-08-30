@@ -1431,13 +1431,13 @@ img{ max-width:100%; height:auto }
   .battle-arena-head .pill{ font-size:.68rem; padding:4px 8px }
 }
 
-/* ≤375px : small phone (iPhone SE, etc) */
+/* ≤375px : small phone (iPhone SE, etc) — keep 2 cols so the page stays filled */
 @media(max-width:375px){
   .main-container{ width:calc(100% - 10px) }
-  .pokemon-grid{ grid-template-columns:1fr; gap:8px }
-  .skeleton-grid{ grid-template-columns:1fr }
-  .team-members{ grid-template-columns:1fr }
-  .fighter-grid, .wild-grid{ grid-template-columns:1fr }
+  .pokemon-grid{ grid-template-columns:repeat(2, minmax(0,1fr)); gap:8px }
+  .skeleton-grid{ grid-template-columns:repeat(2, minmax(0,1fr)) }
+  .team-members{ grid-template-columns:repeat(2, minmax(0,1fr)) }
+  .fighter-grid, .wild-grid{ grid-template-columns:repeat(2, minmax(0,1fr)) }
   .battle-field{ gap:6px }
   .hp-name{ font-size:.78rem }
   .hp-num{ font-size:.64rem }
@@ -1446,6 +1446,15 @@ img{ max-width:100%; height:auto }
   .modal-header{ flex-wrap:wrap; gap:8px }
   .pokemon-detail-name{ font-size:1.1rem }
   .physical-stat{ padding:6px }
+}
+
+/* ≤340px : very small phones — fall back to single column so cards stay readable */
+@media(max-width:340px){
+  .pokemon-grid{ grid-template-columns:1fr; gap:8px }
+  .skeleton-grid{ grid-template-columns:1fr }
+  .team-members{ grid-template-columns:1fr }
+  .fighter-grid, .wild-grid{ grid-template-columns:1fr }
+  .main-container{ width:calc(100% - 10px) }
 }
 
 /* ≤320px : extra small */
@@ -1771,3 +1780,75 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   .td-squad-card img,.td-enemy-card img{ width:46px;height:46px }
   .td-card-info b{ font-size:.76rem }
 }
+
+/* ============ PvP Battle ============ */
+.pvp-lobby{ margin-top:8px }
+.pvp-lobby-card{
+  background:var(--surface-2); border:1px solid var(--line); border-radius:16px;
+  padding:16px; margin-top:12px; display:flex; flex-direction:column;
+}
+.pvp-join-row{ display:flex; gap:8px; align-items:stretch }
+.pvp-code-input{
+  flex:1; min-width:0; height:40px; padding:0 12px; border-radius:10px;
+  border:1px solid var(--line); background:#fff; font-weight:900; letter-spacing:.08em;
+  font-size:.95rem; color:var(--fg); text-transform:uppercase;
+}
+.pvp-code-input:focus{ outline:none; border-color:#3b82f6; box-shadow:0 0 0 3px rgba(59,130,246,.15) }
+.pvp-hint{ display:flex; align-items:center; gap:6px; font-size:.74rem; color:var(--muted); margin-top:10px }
+.pvp-error{ font-size:.78rem; color:#dc2626; font-weight:800; margin-top:10px; text-align:center }
+
+.pvp-code-banner{
+  display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+  background:var(--surface-2); border:1px dashed var(--line); border-radius:14px;
+  padding:10px 12px; margin-bottom:10px;
+}
+.pvp-code-banner span{ font-size:.78rem; color:var(--muted); font-weight:700 }
+.pvp-code-banner strong{ font-size:1.1rem; letter-spacing:.12em; color:#facc15; background:#0f172a; padding:4px 10px; border-radius:8px }
+.pvp-code-banner .btn-refresh{ margin-left:auto }
+
+.pvp-select-list{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin-top:6px }
+.pvp-select-card{
+  display:flex; flex-direction:column; align-items:center; gap:6px;
+  background:var(--surface-2); border:2px solid var(--line); border-radius:14px;
+  padding:12px 8px; cursor:pointer; transition:all .15s ease;
+}
+.pvp-select-card img{ width:72px; height:72px; object-fit:contain }
+.pvp-select-card>span{ font-weight:900; text-transform:capitalize; font-size:.86rem }
+.pvp-select-card small{ display:flex; gap:4px; flex-wrap:wrap; justify-content:center }
+.pvp-select-card:hover{ border-color:#3b82f6; transform:translateY(-2px) }
+.pvp-select-card.chosen{ border-color:#22c55e; background:#ecfdf5 }
+.pvp-select-card:disabled{ opacity:.6; cursor:not-allowed }
+
+.pvp-lock-status{
+  margin-top:14px; display:flex; align-items:center; flex-wrap:wrap; gap:8px;
+  font-size:.8rem; font-weight:800; color:var(--fg);
+}
+.pvp-waiting{ display:inline-flex; align-items:center; gap:6px; color:#f59e0b; font-size:.78rem }
+.pvp-status-bar{
+  padding:10px 14px; text-align:center; font-size:.8rem; color:var(--muted); font-weight:700;
+  border-top:1px solid var(--line); background:#f8fafc;
+}
+.pvp-done{ padding:26px 16px; text-align:center; display:flex; flex-direction:column; align-items:center; gap:12px; background:linear-gradient(180deg,#0f172a,#1e293b); color:#fff }
+.pvp-done h3{ margin:0; font-size:1.15rem; letter-spacing:.04em }
+.lock-pill{
+  position:absolute; top:6px; right:6px; z-index:5; background:rgba(245,158,11,.95); color:#fff;
+  font-size:.64rem; font-weight:900; padding:3px 8px; border-radius:999px; letter-spacing:.03em;
+}
+.lock-pill.mine{ background:rgba(34,197,94,.95) }
+.spin{ animation:spin 1s linear infinite }
+@keyframes spin{ to{ transform:rotate(360deg) } }
+
+@media(max-width:375px){
+  .pvp-select-list{ grid-template-columns:1fr }
+  .pvp-select-card{ flex-direction:row; justify-content:flex-start; text-align:left }
+  .pvp-select-card img{ width:52px; height:52px }
+}
+
+/* Battle mode toggle */
+.battle-mode-toggle{ display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap }
+.battle-mode-btn{
+  display:inline-flex; align-items:center; gap:6px; height:38px; padding:0 14px;
+  border-radius:999px; border:1.5px solid var(--line); background:var(--surface-2);
+  font-weight:800; font-size:.82rem; color:var(--muted); cursor:pointer; transition:all .15s ease;
+}
+.battle-mode-btn.active{ background:#0f172a; border-color:#0f172a; color:#facc15 }

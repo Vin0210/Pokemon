@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "node server.js", 
+    "start": "node server.js",
+    "pvp": "node ws-server.js",
     "dev": "json-server --watch db.json --port 3001",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -13,7 +14,8 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "cors": "^2.8.5",
     "json-server": "^0.17.0",
-    "cors": "^2.8.5"  
+    "ws": "^8.21.3"
   }
 }
