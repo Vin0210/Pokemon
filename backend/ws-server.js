@@ -200,7 +200,7 @@ wss.on('connection', (ws) => {
         const room = rooms.get(p.code);
         if (!room) { send(ws, { type: 'error', payload: { message: 'Room not found' } }); break; }
         if (room.players.length >= 2) { send(ws, { type: 'error', payload: { message: 'Room is full' } }); break; }
-        if (room.players.some(p => p.pokemon)) { send(ws, { type: 'error', payload: { message: 'Battle already started' } }); break; }
+        if (room.state) { send(ws, { type: 'error', payload: { message: 'Battle already started' } }); break; }
         room.players.push({ ws, pokemon: null, idx: 1 });
         send(ws, { type: 'joined', payload: { code: room.code, you: 1 } });
         sendToPlayer(room, 0, { type: 'opponent_joined', payload: { code: room.code } });
