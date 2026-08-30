@@ -23,15 +23,23 @@ REACT_APP_WS_URL=wss://your-server.example.com npm run build
 
 ## Deploy to Railway (option A, recommended)
 
-1. Create a new Railway project and deploy this repo.
-2. Set the start command to `cd backend && npm run pvp`.
+The repo root is a valid Node app (root `package.json`): its `postinstall` runs
+`npm install` in `backend/` and `start` runs `node backend/ws-server.js`. So you
+deploy the whole repo — no Root Directory or custom start command needed.
+
+1. Create a new Railway project and deploy this repo (`Vin0210/Pokemon`).
+2. Railway auto-builds (Railpack detects the Node app at the root), installs
+   backend deps via `postinstall`, and starts the WS server via `start`.
 3. Railway gives you a public URL like `https://your-app.up.railway.app`. It
-   auto-proxies WebSockets, so the client should use `wss://your-app.up.railway.app`.
+   auto-proxies WebSockets, so the client should use
+   `wss://your-app.up.railway.app`. If the deploy does not auto-pick the root,
+   set Settings → General → Root Directory to `/` (repo root).
 4. Point the frontend at it:
    ```bash
    REACT_APP_WS_URL=wss://your-app.up.railway.app npm run build
    ```
-5. Deploy the fresh build to Netlify.
+5. Deploy the fresh build to Netlify (add `REACT_APP_WS_URL` as an env var in
+   Netlify's build settings so it's applied on every deploy).
 
 ## Deploy to Render (option B)
 
