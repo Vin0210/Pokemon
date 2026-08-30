@@ -183,6 +183,162 @@ const calcDamage = (attacker, defender, move) => {
 const typeColor = (t)=>({
   fire:'#ff3d00',water:'#3b82f6',grass:'#22c55e',electric:'#eab308',psychic:'#ec4899',ice:'#06b6d4',dragon:'#7c3aed',fairy:'#f472b6',normal:'#a8a29e',poison:'#a855f7',ground:'#ca8a04',flying:'#818cf8',bug:'#84cc16',rock:'#78716c',ghost:'#6b7280',steel:'#64748b',fighting:'#dc2626',dark:'#44403c'
 }[t]||'#64748b');
+// ---- Pro-grade elemental impact FX: multi-phase choreography per type ----
+const Spark = ({ color, count = 10, spread = 44 }) => (
+  <>
+    {[...Array(count)].map((_, i) => {
+      const ang = (i / count) * Math.PI * 2 + (i % 2) * 0.4;
+      const dist = spread * (0.72 + (i % 3) * 0.16);
+      return (
+        <span key={i} className="fx-spark" style={{
+          background: color, color,
+          '--dx': `${Math.cos(ang) * dist}px`,
+          '--dy': `${Math.sin(ang) * dist * 0.5 + 22}px`,
+          '--sz': `${2 + (i % 3) * 1.2}px`,
+          animationDelay: `${i * 16}ms`,
+        }} />
+      );
+    })}
+  </>
+);
+
+const BoltSvg = ({ style }) => (
+  <svg className="fx-bolt" style={style} viewBox="0 0 20 48">
+    <polyline points="12,0 6,18 12,18 4,48" fill="none" stroke="#fff" strokeWidth="5" strokeLinejoin="miter" opacity=".92" />
+    <polyline points="12,0 6,18 12,18 4,48" fill="none" stroke="#ffe94d" strokeWidth="2.2" strokeLinejoin="miter" />
+  </svg>
+);
+
+const ElementalImpact = ({ type }) => {
+  const t = type || 'normal';
+  if (t === 'electric') {
+    return (
+      <div className="fx-layer">
+        <div className="fx-skybolt">
+          <svg viewBox="0 0 24 130" preserveAspectRatio="none">
+            <polyline points="15,0 8,36 17,36 10,72 18,72 11,130" fill="none" stroke="#fff" strokeWidth="6" strokeLinejoin="miter" opacity=".92" />
+            <polyline points="15,0 8,36 17,36 10,72 18,72 11,130" fill="none" stroke="#ffe94d" strokeWidth="2.6" strokeLinejoin="miter" />
+          </svg>
+        </div>
+        <div className="fx-elec-flash" />
+        <BoltSvg style={{ left:'36%', top:'26%', transform:'rotate(-14deg)', animationDelay:'70ms' }} />
+        <BoltSvg style={{ left:'58%', top:'20%', transform:'rotate(18deg)', animationDelay:'120ms' }} />
+        <BoltSvg style={{ left:'28%', top:'42%', transform:'rotate(8deg) scale(.7)', animationDelay:'180ms' }} />
+        <BoltSvg style={{ left:'62%', top:'44%', transform:'rotate(-22deg) scale(.68)', animationDelay:'220ms' }} />
+        <Spark color="#ffe94d" count={10} spread={48} />
+      </div>
+    );
+  }
+  if (t === 'fire') {
+    return (
+      <div className="fx-layer">
+        <div className="fx-fire-core" />
+        <div className="fx-fire-core b2" />
+        {[...Array(8)].map((_, i) => {
+          const side = i % 2 ? 1 : -1;
+          const col = i % 3 === 0 ? '#ffdd55' : i % 3 === 1 ? '#ff7a1a' : '#ff3d00';
+          return <span key={i} className="fx-ember" style={{
+            left:`${46 + side * (i % 4) * 5}%`, top:`${42 - (i % 3) * 6}%`,
+            '--dx':`${side * (8 + (i % 3) * 9)}px`, '--dy':`${-(32 + (i % 4) * 12)}px`,
+            '--sz':`${3 + (i % 3)}px`, background: col, color: col,
+            animationDelay:`${i * 40}ms`,
+          }} />;
+        })}
+        {[...Array(3)].map((_, i) => (
+          <span key={i} className="fx-smoke" style={{ left:`${40 + i * 12}%`, top:'34%', '--dx':`${(i - 1) * 10}px`, animationDelay:`${300 + i * 100}ms` }} />
+        ))}
+        <Spark color="#ffb347" count={7} spread={40} />
+      </div>
+    );
+  }
+  if (t === 'water') {
+    return (
+      <div className="fx-layer">
+        <div className="fx-water-crown" />
+        {[...Array(9)].map((_, i) => {
+          const ang = Math.PI + (i / 8) * Math.PI;
+          const dx = Math.cos(ang) * (7 + (i % 3) * 6);
+          return <span key={i} className="fx-wdrop" style={{
+            '--ux':`${dx}px`, '--uy':`${-(10 + (i % 4) * 5)}px`,
+            '--ex':`${dx * 1.15}px`, '--ey':`${7 + (i % 3) * 4}px`,
+            animationDelay:`${i * 22}ms`,
+          }} />;
+        })}
+        <div className="fx-ripple r1" /><div className="fx-ripple r2" />
+        <Spark color="#7dd3fc" count={6} spread={16} />
+      </div>
+    );
+  }
+  if (t === 'grass' || t === 'bug') {
+    return (
+      <div className="fx-layer">
+        <div className="fx-nature-ring" />
+        {[...Array(7)].map((_, i) => {
+          const side = i % 2 ? 1 : -1;
+          return <Leaf key={i} className="fx-gleaf" size={14 + (i % 3) * 5} style={{
+            left:'46%', top:'42%',
+            '--tx':`${side * (26 + (i % 3) * 15)}px`, '--ty':`${12 + (i % 3) * 11}px`,
+            '--rot':`${side * (220 + i * 40)}deg`,
+            animationDelay:`${i * 45}ms`,
+          }} />;
+        })}
+        <Spark color="#a3e635" count={6} spread={36} />
+      </div>
+    );
+  }
+  if (t === 'ice') {
+    return (
+      <div className="fx-layer">
+        <div className="fx-frost" />
+        {[...Array(8)].map((_, i) => {
+          const ang = (i / 8) * Math.PI * 2;
+          return <span key={i} className="fx-iceshard" style={{
+            '--dx':`${Math.cos(ang) * (36 + (i % 3) * 13)}px`,
+            '--dy':`${Math.sin(ang) * 24 + 24}px`,
+            '--rot':`${(i % 2 ? 1 : -1) * (140 + i * 30)}deg`,
+            animationDelay:`${i * 28}ms`,
+          }} />;
+        })}
+        {[...Array(4)].map((_, i) => (
+          <span key={i} className="fx-glint" style={{ left:`${32 + i * 13}%`, top:`${26 + (i % 2) * 20}%`, animationDelay:`${150 + i * 110}ms` }} />
+        ))}
+      </div>
+    );
+  }
+  if (t === 'psychic' || t === 'fairy') {
+    return (
+      <div className="fx-layer">
+        <div className="fx-psy-glow" />
+        <div className="fx-ring r1" /><div className="fx-ring r2" /><div className="fx-ring r3" />
+        {[...Array(5)].map((_, i) => (
+          <span key={i} className="fx-glint pink" style={{ left:`${30 + i * 12}%`, top:`${26 + (i % 3) * 14}%`, animationDelay:`${i * 90}ms` }} />
+        ))}
+      </div>
+    );
+  }
+  if (t === 'normal') {
+    return (
+      <div className="fx-layer">
+        <div className="fx-hit-white" />
+        <div className="fx-hitstar big" />
+        <div className="fx-hitstar small" />
+        {[...Array(8)].map((_, i) => (
+          <span key={i} className="fx-speedline" style={{ '--rot':`${i * 45 + 14}deg`, animationDelay:`${i * 8}ms` }} />
+        ))}
+        <Spark color="#ffffff" count={8} spread={42} />
+      </div>
+    );
+  }
+  // Remaining types: generic type-colored energy burst + sparks
+  const gc = typeColor(t);
+  return (
+    <div className="fx-layer">
+      <div className="impact-burst" style={{ background: gc, color: gc }} />
+      <Spark color={gc} count={8} spread={42} />
+    </div>
+  );
+};
+
 
 const Struggle = { name:'Struggle', type:'normal', power:50, acc:100, cat:'physical', pp:1, maxPp:1, priority:0, recoil:0.25, isStruggle:true };
 
@@ -202,6 +358,10 @@ const BattleSimulator = ({ team }) => {
   const [dialog, setDialog] = useState('');
   const [menu, setMenu] = useState('main'); // main | fight | bag
   const [hoveredMove, setHoveredMove] = useState(null);
+  const [screenFlash, setScreenFlash] = useState(null);
+  const [impactFx, setImpactFx] = useState([]);
+  const [enemyHurt, setEnemyHurt] = useState(false);
+  const [playerHurt, setPlayerHurt] = useState(false);
   const sessionRef = useRef(null);
   const busyRef = useRef(false);
   useEffect(()=>{ sessionRef.current = session; }, [session]);
@@ -362,6 +522,11 @@ const BattleSimulator = ({ team }) => {
       return 'continue';
     }
     setDamagePop({who:defenderKey, value:`-${dmg}`, eff, isCrit});
+    // Realistic impact FX: screen flash + shockwave + hurt shake
+    const fxColor = typeColor(moveWithPp.type);
+    setScreenFlash(isCrit ? 'crit' : eff>1 ? 'super' : 'hit');
+    setImpactFx(prev=>[...prev, { id:Date.now()+Math.random(), x: defenderKey==='enemy'?66:34, y:44, color: fxColor }]);
+    if(defenderKey==='enemy') setEnemyHurt(true); else setPlayerHurt(true);
     if(isCrit) typewriter(`A critical hit!`);
     else if(eff>1) typewriter(`It's super effective!`);
     else if(eff<1) typewriter(`It's not very effective...`);
@@ -505,6 +670,8 @@ const BattleSimulator = ({ team }) => {
     if(healAmt) { typewriter(`${attacker.pokemon.name} restored ${healAmt} HP!`); await new Promise(r=>setTimeout(r, 700)); }
     if(recoilAmt) { typewriter(`${attacker.pokemon.name} took ${recoilAmt} recoil damage!`); await new Promise(r=>setTimeout(r, 700)); }
     setAnim(null); setDamagePop(null);
+    setEnemyHurt(false); setPlayerHurt(false); setScreenFlash(null);
+    setTimeout(()=>setImpactFx([]), 700);
     await new Promise(r=>setTimeout(r, 180));
 
     const after = sessionRef.current;
@@ -655,18 +822,21 @@ const BattleSimulator = ({ team }) => {
           <span className="pill" style={{fontSize:'.72rem', background: session.winner ? ((session.isTeamBattle ? session.winnerTeam==='player' : session.winner.id===session.player.pokemon.id)?'#22c55e':'#ef4444') : '#fff', color: session.winner ? '#fff' : undefined}}>{session.winner ? `Winner: ${session.isTeamBattle ? (session.winnerTeam==='player' ? 'Your Team — ' : 'Enemy Team — ') : ''}${session.winner.name}` : session.isTeamBattle ? `Team Battle • ${session.playerTeam.filter(m=>m.hp>0).length} vs ${session.enemyTeam.filter(m=>m.hp>0).length}` : `${session.player.pokemon.name} vs ${session.enemy.pokemon.name}`}</span>
         </div>
 
-        <div className={`battle-stage realistic-stage ${anim?.who==='player' ? 'shake-enemy' : ''} ${anim?.who==='enemy' ? 'shake-player' : ''}`}>
+        <div className={`battle-stage realistic-stage ${anim?.who==='player' ? 'shake-enemy' : ''} ${anim?.who==='enemy' ? 'shake-player' : ''} ${screenFlash ? `flash-${screenFlash}` : ''}`}>
           <div className="arena-particles">
-            {[...Array(6)].map((_,i)=><motion.div key={i} className="arena-dot" animate={{ y:[-8,8,-8], opacity:[.2,.4,.2] }} transition={{ duration:3+i*.5, repeat:Infinity, ease:'easeInOut' }} style={{ left:`${12+i*14}%`, top:`${15+(i%3)*25}%` }}/>)}
+            {[...Array(8)].map((_,i)=><motion.div key={i} className="arena-dot" animate={{ y:[-10,10,-10], opacity:[.15,.35,.15] }} transition={{ duration:3+i*.4, repeat:Infinity, ease:'easeInOut' }} style={{ left:`${8+i*11}%`, top:`${10+(i%4)*22}%` }}/>)}
           </div>
+          {impactFx.map(f=>(
+            <motion.div key={f.id} className="shockwave" initial={{scale:0, opacity:.7}} animate={{scale:3, opacity:0}} transition={{duration:.7, ease:'easeOut'}} style={{left:`${f.x}%`, top:`${f.y}%`, borderColor:f.color}}/>
+          ))}
           <div className="battle-field realistic-field">
             {/* Enemy */}
-            <div className={`combatant enemy ${anim?.who==='enemy' ? 'attacking' : ''} ${damagePop?.who==='enemy' ? 'hit' : ''} ${session.enemy.hp===0 ? 'fainted' : ''}`}>
+            <div className={`combatant enemy ${anim?.who==='enemy' ? 'attacking' : ''} ${damagePop?.who==='enemy' ? 'hit' : ''} ${session.enemy.hp===0 ? 'fainted' : ''} ${enemyHurt ? `hurt hurt-type-${anim?.move?.type || 'normal'}` : ''}`}>
               <div className="hp-card classic enemy-hp">
                 <div className="hp-card-glow" />
                 <div className="hp-top">
                   <span className="hp-name">{session.enemy.pokemon.name} <span className="hp-lv">:L{50}</span> <span className="hp-gender">{session.enemy.pokemon.id%2===0?'♂':'♀'}</span></span>
-                  <motion.span className="hp-num" key={`e-${session.enemy.hp}-${session.enemy.maxHp}`} initial={{scale:1.18, color:'#ef4444'}} animate={{scale:1, color:'#64748b'}} transition={{duration:.4}}>{session.enemy.hp}/{session.enemy.maxHp}</motion.span>
+                  <motion.span className="hp-num" key={`e-${session.enemy.hp}-${session.enemy.maxHp}`} initial={{scale:1.25, color:'#ef4444'}} animate={{scale:1, color:'#64748b'}} transition={{duration:.5}}>{session.enemy.hp}/{session.enemy.maxHp}</motion.span>
                 </div>
                 <div className="hp-bar-classic"><div className="hp-bar-track"><motion.div className={`hp-bar-fill ${enemyLow ? 'low' : enemyPct<50 ? 'mid' : ''}`} animate={{width:`${enemyPct}%`}} transition={{duration:.55, ease:[0.22,1,0.36,1]}} /><motion.div className="hp-bar-delay" animate={{width:`${enemyPct}%`}} transition={{duration:.85, delay:.12}} /></div><span className="hp-label">HP</span></div>
                 <div className="hp-types">{session.enemy.pokemon.types?.map(t=><span key={t} className={`mini-type ${t}`}>{t}</span>)}</div>
@@ -674,6 +844,7 @@ const BattleSimulator = ({ team }) => {
               </div>
               <div className="sprite-wrap realistic">
                 <div className="platform realistic-platform" />
+                {anim?.who==='enemy' && <motion.div className="charge-glow" initial={{opacity:0, scale:.8}} animate={{opacity:[0,.6,0], scale:[.8,1.2,.8]}} transition={{duration:.5}} style={{background:typeColor(anim.move?.type)}}/>}
                 <motion.img
                   src={session.enemy.pokemon.image}
                   alt={session.enemy.pokemon.name}
@@ -686,12 +857,19 @@ const BattleSimulator = ({ team }) => {
                   transition={anim?.who ? {type:'spring', stiffness:520, damping:20} : {duration:2.4, repeat:Infinity, ease:'easeInOut'}}
                   style={{ filter: session.enemy.hp===0 ? 'grayscale(1) brightness(.8)' : undefined }}
                 />
+                {enemyLow && session.enemy.hp > 0 && (
+                  <div className="distress">
+                    <motion.span className="sweat s1" animate={{y:[0,6,0], opacity:[.7,1,.7]}} transition={{duration:1.2, repeat:Infinity}}>💧</motion.span>
+                    <motion.span className="sweat s2" animate={{y:[0,5,0], opacity:[.5,.9,.5]}} transition={{duration:1.4, delay:.3, repeat:Infinity}}>💧</motion.span>
+                  </div>
+                )}
                 {damagePop?.who==='enemy' && (
-                  <motion.div key={damagePop.value+Math.random()} initial={{y:8, opacity:0, scale:.8}} animate={{y:-46, opacity:1, scale:1}} exit={{opacity:0}} transition={{duration:.62, ease:[0.22,1,0.36,1]}} className={`dmg-pop ${damagePop.eff>1 ? 'super' : damagePop.eff<1 && damagePop.eff>0 ? 'resist' : ''} ${damagePop.isCrit ? 'crit' : ''} ${damagePop.value==='MISS' ? 'miss' : ''}`}>
+                  <motion.div key={`ed-${damagePop.id}`} initial={{y:8, opacity:0, scale:.7}} animate={{y:-52, opacity:[0,1,1,0], scale:[.7,1.15,.95]}} transition={{duration:.85, ease:[0.22,1,0.36,1]}} className={`dmg-pop ${damagePop.eff>1 ? 'super' : damagePop.eff<1 && damagePop.eff>0 ? 'resist' : ''} ${damagePop.isCrit ? 'crit' : ''} ${damagePop.value==='MISS' ? 'miss' : ''}`}>
                     {damagePop.value}{damagePop.isCrit && damagePop.value!=='MISS' ? '!' : ''}
                   </motion.div>
                 )}
-                {anim?.who==='player' && !anim.miss && (
+                {enemyHurt && <ElementalImpact type={anim?.move?.type} />}
+                {anim?.who==='player' && !anim.miss && anim.move.type!=='normal' && (
                   <motion.div className={`projectile p-${anim.move.type}`} initial={{x:-92, y:18, scale:.45, opacity:0}} animate={{x:0, y:0, scale:1, opacity:1}} exit={{opacity:0}} transition={{duration:.42, ease:[0.22,1,0.36,1]}}>
                     <span className="proj-core" style={{background:typeColor(anim.move.type)}} />
                     <span className="proj-trail" style={{background:typeColor(anim.move.type)}}/>
@@ -701,7 +879,11 @@ const BattleSimulator = ({ team }) => {
                     {anim.move.type==='electric' && <Zap size={16} style={{color:'#facc15', position:'absolute'}}/>}
                   </motion.div>
                 )}
-                {session.enemy.hp===0 && <div className="faint-overlay">FAINTED</div>}
+                {session.enemy.hp===0 && (
+                  <motion.div className="faint-overlay" initial={{opacity:0}} animate={{opacity:1}} transition={{duration:.8}}>
+                    <motion.div initial={{scale:0}} animate={{scale:1}} transition={{delay:.3, type:'spring'}}>FAINTED</motion.div>
+                  </motion.div>
+                )}
               </div>
             </div>
 
@@ -711,9 +893,10 @@ const BattleSimulator = ({ team }) => {
             </div>
 
             {/* Player */}
-            <div className={`combatant player ${anim?.who==='player' ? 'attacking' : ''} ${damagePop?.who==='player' ? 'hit' : ''} ${session.player.hp===0 ? 'fainted' : ''}`}>
+            <div className={`combatant player ${anim?.who==='player' ? 'attacking' : ''} ${damagePop?.who==='player' ? 'hit' : ''} ${session.player.hp===0 ? 'fainted' : ''} ${playerHurt ? `hurt hurt-type-${anim?.move?.type || 'normal'}` : ''}`}>
               <div className="sprite-wrap realistic">
                 <div className="platform realistic-platform player-plat" />
+                {anim?.who==='player' && <motion.div className="charge-glow" initial={{opacity:0, scale:.8}} animate={{opacity:[0,.6,0], scale:[.8,1.2,.8]}} transition={{duration:.5}} style={{background:typeColor(anim.move?.type)}}/>}
                 <motion.img
                   src={session.player.pokemon.image}
                   alt={session.player.pokemon.name}
@@ -726,24 +909,35 @@ const BattleSimulator = ({ team }) => {
                   transition={anim?.who ? {type:'spring', stiffness:520, damping:20} : {duration:2.4, repeat:Infinity, ease:'easeInOut'}}
                   style={{ transform: 'scaleX(-1)', filter: session.player.hp===0 ? 'grayscale(1) brightness(.8)' : undefined }}
                 />
+                {playerLow && session.player.hp > 0 && (
+                  <div className="distress">
+                    <motion.span className="sweat s1" animate={{y:[0,6,0], opacity:[.7,1,.7]}} transition={{duration:1.2, repeat:Infinity}}>💧</motion.span>
+                    <motion.span className="sweat s2" animate={{y:[0,5,0], opacity:[.5,.9,.5]}} transition={{duration:1.4, delay:.3, repeat:Infinity}}>💧</motion.span>
+                  </div>
+                )}
                 {damagePop?.who==='player' && (
-                  <motion.div key={damagePop.value+Math.random()} initial={{y:8, opacity:0, scale:.8}} animate={{y:-46, opacity:1, scale:1}} exit={{opacity:0}} transition={{duration:.62}} className={`dmg-pop ${damagePop.eff>1 ? 'super' : ''} ${damagePop.isCrit ? 'crit' : ''} ${damagePop.value==='MISS' ? 'miss' : ''}`}>
+                  <motion.div key={`pd-${damagePop.id}`} initial={{y:8, opacity:0, scale:.7}} animate={{y:-52, opacity:[0,1,1,0], scale:[.7,1.15,.95]}} transition={{duration:.85, ease:[0.22,1,0.36,1]}} className={`dmg-pop ${damagePop.eff>1 ? 'super' : ''} ${damagePop.isCrit ? 'crit' : ''} ${damagePop.value==='MISS' ? 'miss' : ''}`}>
                     {damagePop.value}{damagePop.isCrit && damagePop.value!=='MISS' ? '!' : ''}
                   </motion.div>
                 )}
-                {anim?.who==='enemy' && !anim.miss && (
+                {playerHurt && <ElementalImpact type={anim?.move?.type} />}
+                {anim?.who==='enemy' && !anim.miss && anim.move.type!=='normal' && (
                   <motion.div className={`projectile p-${anim.move.type} from-enemy`} initial={{x:92, y:18, scale:.45, opacity:0}} animate={{x:0, y:0, scale:1, opacity:1}} transition={{duration:.42}}>
                     <span className="proj-core" style={{background:typeColor(anim.move.type)}}/>
                     <span className="proj-trail" style={{background:typeColor(anim.move.type)}}/>
                   </motion.div>
                 )}
-                {session.player.hp===0 && <div className="faint-overlay">FAINTED</div>}
+                {session.player.hp===0 && (
+                  <motion.div className="faint-overlay" initial={{opacity:0}} animate={{opacity:1}} transition={{duration:.8}}>
+                    <motion.div initial={{scale:0}} animate={{scale:1}} transition={{delay:.3, type:'spring'}}>FAINTED</motion.div>
+                  </motion.div>
+                )}
               </div>
               <div className="hp-card classic player-hp">
                 <div className="hp-card-glow player-glow" />
                 <div className="hp-top">
                   <span className="hp-name">{session.player.pokemon.name} <span className="hp-lv">:L{50}</span> <span className="hp-gender">{session.player.pokemon.id%2===0?'♀':'♂'}</span></span>
-                  <motion.span className="hp-num" key={`p-${session.player.hp}-${session.player.maxHp}`} initial={{scale:1.18, color:'#ef4444'}} animate={{scale:1, color:'#64748b'}} transition={{duration:.4}}>{session.player.hp}/{session.player.maxHp}</motion.span>
+                  <motion.span className="hp-num" key={`p-${session.player.hp}-${session.player.maxHp}`} initial={{scale:1.25, color:'#ef4444'}} animate={{scale:1, color:'#64748b'}} transition={{duration:.5}}>{session.player.hp}/{session.player.maxHp}</motion.span>
                 </div>
                 <div className="hp-bar-classic"><div className="hp-bar-track"><motion.div className={`hp-bar-fill ${playerLow ? 'low' : playerPct<50 ? 'mid' : ''}`} animate={{width:`${playerPct}%`}} transition={{duration:.55}} /><motion.div className="hp-bar-delay" animate={{width:`${playerPct}%`}} transition={{duration:.85, delay:.12}} /></div><span className="hp-label">HP</span></div>
                 <div className="hp-types">{session.player.pokemon.types?.map(t=><span key={t} className={`mini-type ${t}`}>{t}</span>)}</div>

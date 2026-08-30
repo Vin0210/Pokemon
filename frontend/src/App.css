@@ -705,7 +705,7 @@ a{color:inherit;text-decoration:none}
 .hp-num{ font-size:.72rem; font-weight:800; color:var(--muted); font-variant-numeric:tabular-nums }
 .hp-bar-track{ height:10px; background:#e2e8f0; border-radius:999px; overflow:hidden; border:1px solid #cbd5e1; position:relative }
 .hp-bar-track::after{ content:""; position:absolute; inset:1px; background:linear-gradient(180deg, rgba(255,255,255,.55), transparent); border-radius:999px; pointer-events:none}
-.hp-bar-fill{ height:100%; background:linear-gradient(90deg, #22c55e, #4ade80); border-radius:999px; position:relative; box-shadow:inset 0 -1px 0 rgba(0,0,0,.08)}
+.hp-bar-fill{ height:100%; background:linear-gradient(90deg, #22c55e, #4ade80); border-radius:999px; position:relative; box-shadow:inset 0 -1px 0 rgba(0,0,0,.08); transition:width .55s cubic-bezier(.22,.61,.36,1)}
 .hp-bar-fill.mid{ background:linear-gradient(90deg, #f59e0b, #facc15) }
 .hp-bar-fill.low{ background:linear-gradient(90deg, #ef4444, #f87171); animation:hpPulse 1s infinite alternate}
 @keyframes hpPulse{ from{ filter:brightness(1)} to{ filter:brightness(1.12)}}
@@ -725,7 +725,10 @@ a{color:inherit;text-decoration:none}
 .battle-sprite.flash{ filter:drop-shadow(0 10px 18px rgba(15,23,42,.14)) brightness(1.35) saturate(1.3) }
 .combatant.hit{ animation:hitShake .28s ease }
 @keyframes hitShake{ 0%,100%{ transform:translateX(0)} 25%{ transform:translateX(-4px)} 75%{ transform:translateX(4px)}}
-.combatant.fainted .battle-sprite{ filter:grayscale(1) brightness(.85) drop-shadow(0 6px 10px rgba(0,0,0,.1)); opacity:.55; transform:translateY(8px) scale(.96) !important }
+.combatant.fainted .battle-sprite{ filter:grayscale(1) brightness(.85) drop-shadow(0 6px 10px rgba(0,0,0,.1)); opacity:.55; transform:translateY(14px) scale(.92) !important; animation:faintDrop .7s cubic-bezier(.36,.07,.19,.97) both }
+@keyframes faintDrop{ 0%{ transform:translateY(0) scale(1) rotate(0deg); opacity:1 } 60%{ transform:translateY(-14px) scale(1.03) rotate(6deg) } 100%{ transform:translateY(16px) scale(.88) rotate(-8deg) ; opacity:.45 } }
+.sprite-in{ animation:spriteIn .45s cubic-bezier(.22,1.2,.36,1) both }
+@keyframes spriteIn{ 0%{ transform:scale(.4) translateY(26px); opacity:0 } 60%{ transform:scale(1.12) translateY(-4px); opacity:1 } 100%{ transform:scale(1) translateY(0); opacity:1 } }
 .faint-overlay{
   position:absolute; inset:0; display:grid; place-items:center;
   background:rgba(255,255,255,.72); backdrop-filter:blur(2px);
@@ -777,10 +780,17 @@ a{color:inherit;text-decoration:none}
   cursor:pointer; transition:all .15s; position:relative; overflow:hidden;
 }
 .move-btn:hover{ transform:translateY(-1px); box-shadow:var(--shadow-sm); border-color:#cbd5e1}
-.move-btn:active{ transform:translateY(0px) }
+.move-btn:active{ transform:translateY(1px) scale(.97) }
 .move-btn.disabled{ opacity:.55; cursor:not-allowed; transform:none !important; box-shadow:none}
 .move-btn.hovered{ border-width:2.5px !important; box-shadow:0 0 0 3px var(--secondary-light), 0 6px 16px rgba(59,76,202,.14) !important; transform:translateY(-1px)}
 .move-btn::before{ content:""; position:absolute; inset:0; background:linear-gradient(90deg, transparent, rgba(255,255,255,.0), rgba(255,255,255,0)); pointer-events:none}
+.move-btn::after{
+  content:""; position:absolute; left:0; top:0; height:100%; width:40%;
+  background:linear-gradient(100deg, transparent, rgba(255,255,255,.5), transparent);
+  transform:translateX(-140%) skewX(-20deg); pointer-events:none;
+}
+.move-btn:hover::after, .move-btn:active::after{ animation:btnSheen .6s ease }
+@keyframes btnSheen{ to{ transform:translateX(320%) skewX(-20deg) } }
 .move-head{ display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:6px}
 .move-name{ font-weight:900; font-size:.88rem; letter-spacing:-.01em; text-transform:capitalize; color:var(--text)}
 .move-cat{ font-size:.62rem; font-weight:900; letter-spacing:.08em; padding:2px 6px; border-radius:999px; background:var(--surface-2); border:1px solid var(--line); color:var(--muted)}
@@ -827,6 +837,7 @@ a{color:inherit;text-decoration:none}
 .realistic-moves{ gap:8px}
 .realistic-move{ background:linear-gradient(180deg, #fff, #f8fafc); border:2px solid var(--line); border-radius:14px; box-shadow:0 3px 0 #e2e8f0}
 .realistic-move:hover{ border-color:#cbd5e1; box-shadow:0 4px 0 #cbd5e1; transform:translateY(-1px)}
+.realistic-move:active:not(:disabled){ transform:translateY(2px) scale(.98); box-shadow:0 1px 0 #cbd5e1 }
 .realistic-move.out{ background:#f8fafc; border-color:#e2e8f0; border-style:dashed}
 .prio-badge{ font-size:.58rem; font-weight:900; background:#ffcb05; color:#0f172a; padding:1px 5px; border-radius:999px; border:1px solid #eab308}
 .move-acc{ font-size:.68rem}
@@ -836,11 +847,66 @@ a{color:inherit;text-decoration:none}
 .battle-simulator.realistic .battle-arena-head .btn-refresh{ background:#fff; color:#0f172a; border-color:#fff}
 .proj-trail{ position:absolute; inset:-4px; border-radius:50%; background:var(--c, #ffcb05); opacity:.18; filter:blur(6px); z-index:-1}
 .battle-sprite.enemy-sprite{ filter:drop-shadow(0 12px 18px rgba(0,0,0,.18)) }
+.sprite-mount{ display:block; line-height:0 }
 
 /* ============ BATTLEFIELD ENHANCEMENTS ============ */
 /* Ambient floating particles */
 .arena-particles{ position:absolute; inset:0; pointer-events:none; z-index:0; overflow:hidden }
 .arena-dot{ position:absolute; width:6px; height:6px; border-radius:50%; background:rgba(59,76,202,.25) }
+.arena-dot{ position:absolute; width:6px; height:6px; border-radius:50%; background:rgba(59,76,202,.25) }
+
+/* ---- Impact shockwave ripples (spawned on hit) ---- */
+.shockwave{
+  position:absolute; width:72px; height:72px; border-radius:50%;
+  border:3px solid; transform:translate(-50%,-50%);
+  pointer-events:none; z-index:3;
+  box-shadow:0 0 18px rgba(255,255,255,.35), inset 0 0 12px rgba(255,255,255,.25);
+}
+
+/* ---- Radial burst at the defender on hit ---- */
+.impact-burst{
+  position:absolute; left:50%; top:45%; width:56px; height:56px;
+  border-radius:50%; transform:translate(-50%,-50%);
+  pointer-events:none; z-index:3; opacity:.85; filter:blur(2px);
+  box-shadow:0 0 24px 8px rgba(255,255,255,.35);
+}
+
+/* ---- Type-colored charge glow under attacker before strike ---- */
+.charge-glow{
+  position:absolute; left:10%; right:10%; bottom:4px; height:55%;
+  border-radius:50%; filter:blur(16px); pointer-events:none; z-index:0;
+}
+
+/* ---- Hurt reaction on the defender ---- */
+.combatant.hurt{ animation:hurtShake .45s cubic-bezier(.36,.07,.19,.97) }
+@keyframes hurtShake{
+  0%,100%{ transform:translate(0,0) }
+  15%{ transform:translate(-6px,2px) }
+  30%{ transform:translate(5px,-2px) }
+  45%{ transform:translate(-4px,1px) }
+  60%{ transform:translate(3px,0) }
+  80%{ transform:translate(-2px,0) }
+}
+
+/* ---- Full-stage screen flashes by outcome ---- */
+.battle-stage.flash-hit{ animation:stageFlashHit .45s ease }
+.battle-stage.flash-super{ animation:stageFlashSuper .55s ease }
+.battle-stage.flash-crit{ animation:stageFlashCrit .65s ease }
+@keyframes stageFlashHit{ 0%,100%{ filter:none } 30%{ filter:brightness(1.35) } }
+@keyframes stageFlashSuper{ 0%,100%{ filter:none } 25%{ filter:brightness(1.5) saturate(1.4) } 60%{ filter:brightness(1.15) } }
+@keyframes stageFlashCrit{ 0%,100%{ filter:none } 18%{ filter:brightness(1.9) contrast(1.12) } 40%{ filter:brightness(1.1) } 60%{ filter:brightness(1.6) } }
+
+/* ---- Low-HP sweat drops ---- */
+.distress{ position:absolute; top:-8px; right:4px; width:30px; height:22px; z-index:2; pointer-events:none }
+.sweat{ position:absolute; font-size:.85rem; filter:drop-shadow(0 1px 2px rgba(0,0,0,.2)) }
+.sweat.s1{ left:0; top:0 } .sweat.s2{ left:12px; top:10px }
+
+@media (prefers-reduced-motion: reduce){
+  .shockwave, .impact-burst, .charge-glow{ display:none }
+  .combatant.hurt,
+  .battle-stage.flash-hit, .battle-stage.flash-super, .battle-stage.flash-crit{ animation:none }
+}
+
 
 /* HP card glow accent */
 .hp-card-glow{ position:absolute; top:-2px; left:10px; right:10px; height:3px; border-radius:999px; background:linear-gradient(90deg,#ef4444,#f59e0b); opacity:.85 }
@@ -911,6 +977,257 @@ a{color:inherit;text-decoration:none}
 .fighter-types{ display:flex; gap:4px; flex-wrap:wrap}
 .fighter-stats{ display:flex; gap:6px; flex-wrap:wrap}
 .fighter-stats span{ font-size:.68rem; font-weight:800; color:var(--muted); background:var(--surface-2); border:1px solid var(--line); padding:2px 6px; border-radius:999px; display:inline-flex; align-items:center; gap:4px}
+/* ---- Pro elemental impact FX (multi-phase choreography) ---- */
+/* Layer is constrained to the sprite's footprint (not the full wrap) so all
+   FX coordinates map onto the visible creature */
+.fx-layer{
+  position:absolute; left:50%; top:0; width:128px; height:100%;
+  transform:translateX(-50%); pointer-events:none; z-index:3;
+}
+.fx-layer > *{ position:absolute }
+
+/* Glowing debris sparks (shared) — flies out on a gravity arc */
+.fx-spark{
+  left:50%; top:45%; width:var(--sz,3px); height:var(--sz,3px); border-radius:50%;
+  box-shadow:0 0 6px currentColor;
+  animation:sparkFly .62s cubic-bezier(.15,.6,.3,1) forwards;
+}
+@keyframes sparkFly{
+  0%{ transform:translate(0,0) scale(1); opacity:0 }
+  12%{ opacity:1 }
+  55%{ transform:translate(calc(var(--dx,30px)*.62), calc(var(--dy,24px)*.22)) scale(.9); opacity:.95 }
+  100%{ transform:translate(var(--dx,30px), var(--dy,24px)) scale(.35); opacity:0 }
+}
+
+/* Electric — sky bolt strike, flash, crackling bolts */
+.fx-skybolt{
+  top:-26px; left:46%; width:30px; height:158px; transform-origin:top center;
+  filter:drop-shadow(0 0 8px #ffe94d);
+  animation:skyboltStrike .5s steps(1,end) forwards;
+}
+.fx-skybolt svg{ width:100%; height:100% }
+@keyframes skyboltStrike{
+  0%{ opacity:0; transform:scaleY(.06) }
+  7%{ opacity:1; transform:scaleY(1) }
+  18%{ opacity:.15 }
+  30%{ opacity:1 }
+  50%{ opacity:.3 }
+  70%{ opacity:.9 }
+  100%{ opacity:0 }
+}
+.fx-elec-flash{
+  left:50%; top:45%; width:120px; height:120px; transform:translate(-50%,-50%); border-radius:50%;
+  background:radial-gradient(circle, rgba(255,255,255,.95) 0 14%, rgba(255,240,140,.75) 34%, rgba(255,214,10,.28) 55%, transparent 72%);
+  mix-blend-mode:screen; animation:elecFlash .55s cubic-bezier(.2,.9,.3,1) forwards;
+}
+@keyframes elecFlash{ 0%{ opacity:0; scale:.3 } 18%{ opacity:1; scale:1 } 55%{ opacity:.55; scale:1.25 } 100%{ opacity:0; scale:1.6 } }
+.fx-bolt{
+  width:20px; height:46px; transform-origin:top center;
+  filter:drop-shadow(0 0 7px #ffe94d);
+  animation:boltFlash .58s steps(1,end) forwards;
+}
+@keyframes boltFlash{ 0%{opacity:0} 8%{opacity:1} 26%{opacity:.05} 40%{opacity:1} 58%{opacity:.2} 74%{opacity:1} 100%{opacity:0} }
+
+/* Fire — flame bloom with turbulence, embers, smoke afterglow */
+.fx-fire-core{
+  left:50%; top:46%; width:104px; height:118px; transform:translate(-50%,-50%); border-radius:50% 50% 46% 46%;
+  background:radial-gradient(circle at 50% 62%, #fff7cc 0 9%, #ffd166 24%, #ff7a1a 46%, #ff3d00 62%, transparent 76%);
+  mix-blend-mode:screen; filter:blur(1px);
+  animation:fireBloom .58s cubic-bezier(.2,.9,.3,1) forwards;
+}
+.fx-fire-core.b2{ width:70px; height:84px; animation-duration:.5s; animation-delay:.06s; filter:blur(2px) }
+@keyframes fireBloom{
+  0%{ transform:translate(-50%,-38%) scale(.15); opacity:0 }
+  22%{ opacity:1 }
+  58%{ transform:translate(-50%,-50%) scale(1.12) }
+  100%{ transform:translate(-50%,-58%) scale(1.45); opacity:0 }
+}
+.fx-ember{
+  width:var(--sz,4px); height:var(--sz,4px); border-radius:50% 50% 50% 0;
+  box-shadow:0 0 7px 1px currentColor;
+  animation:emberRise .68s ease-out forwards;
+}
+@keyframes emberRise{
+  0%{ transform:translate(0,6px) scale(.4) rotate(0); opacity:0 }
+  18%{ opacity:1 }
+  45%{ transform:translate(calc(var(--dx,10px)*.7), calc(var(--dy,-40px)*.55)) rotate(140deg) scale(1) }
+  100%{ transform:translate(var(--dx,10px), var(--dy,-40px)) rotate(300deg) scale(.3); opacity:0 }
+}
+.fx-smoke{
+  width:22px; height:22px; border-radius:50%;
+  background:radial-gradient(circle, rgba(120,124,132,.5) 0%, rgba(90,94,102,.28) 55%, transparent 75%);
+  animation:smokePuff .85s ease-out forwards;
+}
+@keyframes smokePuff{
+  0%{ transform:translate(0,0) scale(.5); opacity:0 }
+  25%{ opacity:.55 }
+  100%{ transform:translate(var(--dx,6px), -52px) scale(1.9); opacity:0 }
+}
+
+/* Water — splash crown, parabolic droplets, ground ripples */
+.fx-water-crown{
+  left:50%; top:46%; width:84px; height:84px; transform:translate(-50%,-50%); border-radius:50%;
+  background:radial-gradient(circle at 50% 58%, rgba(255,255,255,.95) 0 12%, rgba(125,211,252,.85) 34%, rgba(14,165,233,.5) 58%, transparent 74%);
+  mix-blend-mode:screen; animation:waterSplash .6s cubic-bezier(.2,.8,.35,1) forwards;
+}
+@keyframes waterSplash{
+  0%{ transform:translate(-50%,-50%) scale(.15); opacity:0 }
+  20%{ opacity:1 }
+  48%{ transform:translate(-50%,-50%) scale(1.02) }
+  62%{ transform:translate(-50%,-50%) scale(.9) }
+  100%{ transform:translate(-50%,-50%) scale(1.22); opacity:0 }
+}
+.fx-wdrop{
+  left:50%; top:46%; width:8px; height:11px; border-radius:50%/60% 60% 40% 40%;
+  background:linear-gradient(180deg,#e0f2fe,#0ea5e9);
+  box-shadow:0 0 6px rgba(14,165,233,.75);
+  animation:dropArc .66s cubic-bezier(.2,.65,.4,1) forwards;
+}
+@keyframes dropArc{
+  0%{ transform:translate(0,0) scale(.45); opacity:0 }
+  14%{ opacity:1 }
+  45%{ transform:translate(var(--ux,20px), var(--uy,-26px)) scale(1) }
+  100%{ transform:translate(var(--ex,26px), var(--ey,22px)) scale(.6); opacity:0 }
+}
+.fx-ripple{
+  left:50%; top:62%; width:54px; height:16px; margin:-8px 0 0 -27px; border-radius:50%;
+  border:2.5px solid rgba(56,189,248,.65); box-shadow:0 0 10px rgba(56,189,248,.35);
+  animation:rippleOut .7s ease-out forwards;
+}
+.fx-ripple.r2{ animation-delay:.12s; border-color:rgba(125,211,252,.45) }
+@keyframes rippleOut{ 0%{ transform:scale(.25); opacity:.95 } 100%{ transform:scaleX(1.8) scaleY(1.5); opacity:0 } }
+
+/* Grass / Bug — energy ring + leaves fluttering away */
+.fx-nature-ring{
+  left:50%; top:45%; width:70px; height:70px; margin:-35px 0 0 -35px; border-radius:50%;
+  border:3px solid rgba(163,230,53,.7); box-shadow:0 0 12px rgba(132,204,22,.4);
+  animation:ringOut .65s ease-out forwards;
+}
+.fx-gleaf{
+  color:#4ade80; filter:drop-shadow(0 0 5px rgba(74,222,128,.75));
+  animation:leafFlutter .75s cubic-bezier(.2,.7,.35,1) forwards;
+}
+@keyframes leafFlutter{
+  0%{ transform:translate(0,0) rotate(0) scale(.35); opacity:0 }
+  18%{ opacity:1 }
+  60%{ transform:translate(calc(var(--tx,30px)*.6), calc(var(--ty,18px)*.7)) rotate(calc(var(--rot,240deg)*.55)) scale(1) }
+  100%{ transform:translate(var(--tx,30px), var(--ty,18px)) rotate(var(--rot,240deg)) scale(.85); opacity:0 }
+}
+
+/* Ice — frost bloom, flying shards with gravity, twinkling glints */
+.fx-frost{
+  inset:6%; border-radius:14px;
+  background:radial-gradient(circle at 50% 46%, rgba(224,242,254,.6) 0%, rgba(186,230,253,.3) 42%, transparent 68%);
+  mix-blend-mode:screen; animation:frostIn .7s ease-out forwards;
+}
+@keyframes frostIn{ 0%{ opacity:0 } 30%{ opacity:.95 } 100%{ opacity:0 } }
+.fx-iceshard{
+  left:50%; top:44%; width:12px; height:16px;
+  clip-path:polygon(50% 0, 100% 78%, 50% 100%, 0 78%);
+  background:linear-gradient(180deg,#f0f9ff,#7dd3fc);
+  filter:drop-shadow(0 0 5px rgba(125,211,252,.85));
+  animation:shardFly .66s cubic-bezier(.2,.65,.4,1) forwards;
+}
+@keyframes shardFly{
+  0%{ transform:translate(0,0) scale(.3) rotate(0); opacity:0 }
+  15%{ opacity:1 }
+  55%{ transform:translate(calc(var(--dx,34px)*.6), calc(var(--dy,30px)*.15)) rotate(calc(var(--rot,180deg)*.5)) scale(1) }
+  100%{ transform:translate(var(--dx,34px), var(--dy,30px)) rotate(var(--rot,180deg)) scale(.55); opacity:0 }
+}
+
+/* Psychic / Fairy — breathing glow, warped rings, floating glints */
+.fx-psy-glow{
+  left:50%; top:45%; width:110px; height:110px; transform:translate(-50%,-50%); border-radius:50%;
+  background:radial-gradient(circle, rgba(249,168,212,.8) 0%, rgba(236,72,153,.35) 45%, transparent 72%);
+  mix-blend-mode:screen; animation:psyGlow .7s ease-in-out forwards;
+}
+@keyframes psyGlow{ 0%{ opacity:0; scale:.4 } 30%{ opacity:.95; scale:1 } 55%{ opacity:.55; scale:1.15 } 80%{ opacity:.85; scale:1.3 } 100%{ opacity:0; scale:1.55 } }
+.fx-ring{
+  left:50%; top:45%; width:70px; height:70px; margin:-35px 0 0 -35px; border-radius:50%;
+  border:3px solid rgba(236,72,153,.8); box-shadow:0 0 14px rgba(236,72,153,.45);
+  animation:ringOut .72s ease-out forwards;
+}
+.fx-ring.r2{ border-color:rgba(244,114,182,.6); animation-delay:.09s }
+.fx-ring.r3{ border-color:rgba(249,168,212,.5); animation-delay:.18s }
+@keyframes ringOut{ 0%{ transform:scale(.22); opacity:.95 } 100%{ transform:scale(2.5); opacity:0 } }
+
+/* Twinkling star glints (ice / psychic / fairy) */
+.fx-glint{
+  width:16px; height:16px;
+  background:
+    linear-gradient(#fff,#fff) center/2.5px 100% no-repeat,
+    linear-gradient(#fff,#fff) center/100% 2.5px no-repeat,
+    radial-gradient(circle, #fff 0 26%, transparent 30%);
+  filter:drop-shadow(0 0 5px rgba(255,255,255,.95));
+  animation:glintTwinkle .55s ease-out forwards;
+}
+.fx-glint.pink{ filter:drop-shadow(0 0 6px rgba(249,168,212,.95)) }
+@keyframes glintTwinkle{
+  0%{ transform:scale(0) rotate(0); opacity:0 }
+  35%{ transform:scale(1.25) rotate(24deg); opacity:1 }
+  100%{ transform:scale(.4) rotate(50deg); opacity:0 }
+}
+
+/* Normal — juicy anime hit: white flash, double star w/ overshoot, speedlines */
+.fx-hit-white{
+  left:50%; top:45%; width:150px; height:150px; transform:translate(-50%,-50%); border-radius:50%;
+  background:radial-gradient(circle, rgba(255,255,255,.95) 0 28%, rgba(255,255,255,.35) 52%, transparent 70%);
+  mix-blend-mode:screen; animation:hitWhite .38s ease-out forwards;
+}
+@keyframes hitWhite{ 0%{ opacity:0; scale:.25 } 22%{ opacity:1 } 100%{ opacity:0; scale:1.5 } }
+.fx-hitstar{
+  left:50%; top:45%; width:96px; height:96px; border-radius:6px;
+  background:
+    radial-gradient(circle, #fff 0 22%, transparent 26%),
+    linear-gradient(#fff,#fff) center/100% 13px no-repeat,
+    linear-gradient(#fff,#fff) center/13px 100% no-repeat,
+    linear-gradient(#ff9d2e,#ff9d2e) center/100% 20px no-repeat,
+    linear-gradient(#ff9d2e,#ff9d2e) center/20px 100% no-repeat;
+  filter:drop-shadow(0 0 12px rgba(255,255,255,.95)) drop-shadow(0 0 18px rgba(255,157,46,.55));
+}
+.fx-hitstar.big{ animation:hitStarBig .46s cubic-bezier(.2,1.5,.35,1) forwards }
+.fx-hitstar.small{ width:56px; height:56px; animation:hitStarSmall .46s cubic-bezier(.2,1.5,.35,1) .06s forwards }
+@keyframes hitStarBig{
+  0%{ transform:translate(-50%,-50%) scale(.1) rotate(-24deg); opacity:0 }
+  25%{ opacity:1 }
+  55%{ transform:translate(-50%,-50%) scale(1.18) rotate(12deg) }
+  100%{ transform:translate(-50%,-50%) scale(1.55) rotate(40deg); opacity:0 }
+}
+@keyframes hitStarSmall{
+  0%{ transform:translate(-50%,-50%) scale(.1) rotate(30deg); opacity:0 }
+  30%{ opacity:1 }
+  100%{ transform:translate(-50%,-50%) scale(1.7) rotate(-28deg); opacity:0 }
+}
+.fx-speedline{
+  left:50%; top:45%; width:3px; height:26px; margin:-13px 0 0 -1.5px; border-radius:2px;
+  background:linear-gradient(180deg, transparent, #fff 30%, #fff 70%, transparent);
+  animation:speedline .42s ease-out forwards;
+}
+@keyframes speedline{
+  0%{ transform:rotate(var(--rot,0deg)) translateY(-14px) scaleY(.3); opacity:0 }
+  25%{ opacity:.95 }
+  100%{ transform:rotate(var(--rot,0deg)) translateY(-54px) scaleY(1.35); opacity:0 }
+}
+
+/* Generic burst for remaining types */
+.fx-layer .impact-burst{ left:50%; top:45%; animation:burstOut .5s cubic-bezier(.2,.8,.35,1) forwards }
+@keyframes burstOut{ 0%{ transform:translate(-50%,-50%) scale(.15); opacity:.95 } 100%{ transform:translate(-50%,-50%) scale(2.4); opacity:0 } }
+
+/* Sprite reactions — light interacting with the defender */
+.combatant.hurt-type-electric .battle-sprite{ animation:spriteElec .58s steps(3,end) }
+@keyframes spriteElec{ 0%,100%{ filter:none } 18%{ filter:brightness(2.3) saturate(.35) } 38%{ filter:brightness(.65) } 58%{ filter:brightness(1.9) saturate(1.5) } 80%{ filter:brightness(.8) } }
+.combatant.hurt-type-fire .battle-sprite{ animation:spriteBurn .6s ease-out }
+@keyframes spriteBurn{ 0%,100%{ filter:none } 30%{ filter:brightness(1.65) sepia(.55) saturate(2.2) hue-rotate(-20deg) } 70%{ filter:brightness(1.15) sepia(.2) } }
+.combatant.hurt-type-ice .battle-sprite{ animation:spriteFreeze .7s ease-out }
+@keyframes spriteFreeze{ 0%,100%{ filter:none } 40%{ filter:brightness(1.55) saturate(.25) hue-rotate(165deg) } 75%{ filter:brightness(1.1) saturate(.6) } }
+.combatant.hurt-type-water .battle-sprite{ animation:spriteSoak .6s ease-out }
+@keyframes spriteSoak{ 0%,100%{ filter:none } 35%{ filter:brightness(1.4) saturate(1.6) hue-rotate(12deg) } }
+
+@media (prefers-reduced-motion: reduce){
+  .fx-layer{ display:none }
+  .combatant[class*="hurt-type"] .battle-sprite{ animation:none }
+}
+
 .fighter-moves-preview{ display:flex; gap:4px; flex-wrap:wrap}
 .mini-move{ font-size:.64rem; font-weight:800; letter-spacing:.02em; padding:2px 6px; border-radius:999px; background:#fff; border:1px solid var(--line); display:inline-flex; align-items:center; gap:4px}
 .mini-move .dot{ width:6px; height:6px; border-radius:50%}
@@ -1858,18 +2175,19 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .confirm-btn:disabled{ opacity:.5; cursor:not-allowed }
 
 /* PvP team strips (bench) */
-.team-strip{ display:flex; gap:4px; padding:4px 6px; background:rgba(15,23,42,.35); border-radius:10px; flex-wrap:wrap; justify-content:center }
-.enemy-strip{ margin-bottom:4px }
+.team-strip{ display:flex; gap:4px; padding:4px 6px; background:rgba(15,23,42,.35); border-radius:10px; flex-wrap:nowrap; justify-content:flex-start; overflow-x:auto; max-width:100%; scrollbar-width:none }
+.team-strip::-webkit-scrollbar{ display:none }
+.enemy-strip{ margin-bottom:4px; justify-content:flex-end }
 .player-strip{ margin-bottom:4px }
 .team-strip-pip{
-  display:flex; flex-direction:column; align-items:center; gap:1px; padding:2px;
-  border-radius:8px; border:1.5px solid rgba(255,255,255,.25); min-width:40px;
+  display:flex; flex-direction:column; align-items:center; gap:1px; padding:2px 3px; flex:0 0 auto;
+  border-radius:8px; border:1.5px solid rgba(255,255,255,.25); min-width:38px;
 }
 .team-strip-pip img{ width:30px; height:30px; object-fit:contain; filter:grayscale(.3) }
 .team-strip-pip.active{ border-color:#facc15; background:rgba(250,204,21,.18) }
 .team-strip-pip.fainted{ opacity:.4 }
 .team-strip-pip.fainted img{ filter:grayscale(1) brightness(.6) }
-.pip-hp{ font-size:.5rem; color:#fff; font-weight:900; line-height:1 }
+.pip-hp{ font-size:.5rem; color:#fff; font-weight:900; line-height:1; white-space:nowrap }
 
 /* PvP switch panel */
 .pvp-switch-panel{ padding:10px; text-align:center }
@@ -1887,8 +2205,66 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 @media(max-width:375px){ .pvp-switch-list{ grid-template-columns:repeat(2,minmax(0,1fr)) } }
 
 /* PvP switch control button in moves grid */
-.switch-ctl{ background:linear-gradient(180deg,#334155,#475569); color:#fff }
-.switch-ctl:hover{ filter:brightness(1.1) }
+.switch-ctl{ background:linear-gradient(180deg,#334155,#475569); color:#fff; transition:filter .15s ease, transform .15s ease }
+.switch-ctl:hover{ filter:brightness(1.12) }
+.switch-ctl:active:not(:disabled){ transform:scale(.96) }
+
+/* ===== PvP compact mobile + animation polish ===== */
+.pvp-switch-card{ transition:transform .15s ease, border-color .15s ease, box-shadow .15s ease }
+.pvp-switch-card:active:not(:disabled){ transform:scale(.95) }
+.pvp-switch-card.active{ box-shadow:0 0 0 2px rgba(250,204,21,.35) inset }
+.pvp-switch-card:not(.active):not(.out):hover{ border-color:#3b82f6 }
+
+@media(max-width:620px){
+  .battle-arena-head{ gap:6px; padding:8px 8px; flex-wrap:wrap }
+  .battle-arena-head .pill{ font-size:.64rem !important }
+  /* compact stacked field */
+  .battle-stage, .realistic-stage{ padding:8px 6px 6px }
+  .realistic-field{ gap:8px }
+  .sprite-wrap.realistic{ height:104px }
+  .battle-sprite{ width:80px; height:80px }
+  .hp-card.classic{ padding:6px 8px }
+  .hp-top{ margin-bottom:4px }
+  .hp-name{ font-size:.8rem }
+  .hp-num{ font-size:.66rem }
+  .hp-bar-classic .hp-bar-track{ height:7px }
+  .hp-types{ margin-top:3px }
+  .team-strip-pip{ min-width:32px; padding:1px 2px }
+  .team-strip-pip img{ width:24px; height:24px }
+  .pip-hp{ font-size:.46rem }
+  .combatant{ gap:6px }
+  .vs-mini{ width:30px; height:30px; font-size:.66rem }
+  .battle-log.realistic-log{ min-height:48px; padding:7px 10px; font-size:.8rem; margin-top:8px }
+}
+
+@media(max-width:520px){
+  /* keep moves in 2 columns even on small phones for a compact grid */
+  .moves-grid, .realistic-moves{ grid-template-columns:repeat(2, minmax(0,1fr)); gap:7px }
+  .move-btn.realistic-move{ padding:8px 8px }
+  .move-name{ font-size:.8rem }
+  .move-head{ margin-bottom:5px; gap:6px }
+  .move-foot{ gap:5px }
+  .move-type{ font-size:.56rem; padding:2px 5px }
+  .move-pow, .move-acc{ font-size:.64rem; padding:2px 4px }
+  .battle-controls.realistic-controls{ padding:9px 9px 11px }
+  /* switch panel cards compact */
+  .pvp-switch-list{ grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; margin-top:6px }
+  .pvp-switch-card{ padding:6px 3px; gap:3px }
+  .pvp-switch-card img{ width:38px; height:38px }
+  .pvp-switch-card span{ font-size:.64rem }
+  .pvp-switch-card small{ font-size:.56rem }
+  /* select cards compact */
+  .pvp-select-card{ padding:8px 6px; gap:4px }
+  .pvp-select-card img{ width:58px; height:58px }
+  .pvp-select-card>span{ font-size:.8rem }
+}
+
+@media(max-width:375px){
+  .pvp-switch-list{ grid-template-columns:repeat(2,minmax(0,1fr)) }
+  .moves-grid, .realistic-moves{ grid-template-columns:1fr 1fr; gap:6px }
+  .battle-sprite{ width:70px; height:70px }
+  .sprite-wrap.realistic{ height:92px }
+}
 
 /* Battle mode toggle */
 .battle-mode-toggle{ display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap }

@@ -281,10 +281,14 @@ const PvpBattle = ({ team }) => {
             </div>
             <div className="sprite-wrap realistic">
               <div className="platform realistic-platform" />
-              <motion.img src={battle.enemy.pokemon.image} alt={battle.enemy.pokemon.name} className="battle-sprite enemy-sprite"
-                animate={anim?.who === 'enemy' ? { x: -36, scale: 1.07 } : { x: 0, y: [0, -4, 0], scale: 1 }}
-                transition={anim?.who ? { type: 'spring', stiffness: 520, damping: 20 } : { duration: 2.4, repeat: Infinity }}
-                style={{ filter: battle.enemy.hp <= 0 ? 'grayscale(1) brightness(.8)' : undefined }} />
+              <motion.span key={battle.enemy.pokemon.id} className="sprite-mount"
+                initial={{ scale: .55, y: 26, opacity: 0 }} animate={{ scale: 1, y: 0, opacity: 1 }}
+                transition={{ type: 'spring', stiffness: 320, damping: 22 }}>
+                <motion.img src={battle.enemy.pokemon.image} alt={battle.enemy.pokemon.name} className="battle-sprite enemy-sprite"
+                  animate={anim?.who === 'enemy' ? { x: -36, scale: 1.07 } : { x: 0, y: [0, -4, 0], scale: 1 }}
+                  transition={anim?.who ? { type: 'spring', stiffness: 520, damping: 20 } : { duration: 2.4, repeat: Infinity }}
+                  style={{ filter: battle.enemy.hp <= 0 ? 'grayscale(1) brightness(.8)' : undefined }} />
+              </motion.span>
               {damagePop?.who === 'enemy' && (
                 <motion.div key={damagePop.value + Math.random()} initial={{ y: 8, opacity: 0 }} animate={{ y: -46, opacity: 1 }} transition={{ duration: .62 }} className={`dmg-pop ${damagePop.eff > 1 ? 'super' : ''} ${damagePop.eff < 1 && damagePop.eff > 0 ? 'resist' : ''} ${damagePop.isCrit ? 'crit' : ''} ${damagePop.value === 'MISS' ? 'miss' : ''}`}>{damagePop.value}</motion.div>
               )}
@@ -317,10 +321,14 @@ const PvpBattle = ({ team }) => {
             </div>
             <div className="sprite-wrap realistic">
               <div className="platform realistic-platform player-plat" />
-              <motion.img src={battle.player.pokemon.image} alt={battle.player.pokemon.name} className="battle-sprite player-sprite"
-                animate={anim?.who === 'player' ? { x: 36, scale: 1.07 } : { x: 0, y: [0, -4, 0], scale: 1 }}
-                transition={anim?.who ? { type: 'spring', stiffness: 520, damping: 20 } : { duration: 2.4, repeat: Infinity }}
-                style={{ transform: 'scaleX(-1)', filter: battle.player.hp <= 0 ? 'grayscale(1) brightness(.8)' : undefined }} />
+              <motion.span key={battle.player.pokemon.id} className="sprite-mount"
+                initial={{ scale: .55, y: 26, opacity: 0 }} animate={{ scale: 1, y: 0, opacity: 1 }}
+                transition={{ type: 'spring', stiffness: 320, damping: 22 }}>
+                <motion.img src={battle.player.pokemon.image} alt={battle.player.pokemon.name} className="battle-sprite player-sprite"
+                  animate={anim?.who === 'player' ? { x: 36, scale: 1.07 } : { x: 0, y: [0, -4, 0], scale: 1 }}
+                  transition={anim?.who ? { type: 'spring', stiffness: 520, damping: 20 } : { duration: 2.4, repeat: Infinity }}
+                  style={{ transform: 'scaleX(-1)', filter: battle.player.hp <= 0 ? 'grayscale(1) brightness(.8)' : undefined }} />
+              </motion.span>
               {damagePop?.who === 'player' && (
                 <motion.div key={damagePop.value + Math.random()} initial={{ y: 8, opacity: 0 }} animate={{ y: -46, opacity: 1 }} transition={{ duration: .62 }} className={`dmg-pop ${damagePop.eff > 1 ? 'super' : ''} ${damagePop.isCrit ? 'crit' : ''} ${damagePop.value === 'MISS' ? 'miss' : ''}`}>{damagePop.value}</motion.div>
               )}
