@@ -309,8 +309,16 @@ const PvpBattle = ({ team }) => {
                 onKeyDown={(e) => e.key === 'Enter' && joinRoom()} />
               <button className="btn-refresh" onClick={joinRoom} style={{ height: 40 }}><Link size={13} /> Join</button>
             </div>
-            {!conn && <p className="pvp-hint"><Loader size={12} className="spin" /> Connecting to battle server…</p>}
-            {error && <p className="pvp-error">{error}</p>}
+            {!conn && !error && <p className="pvp-hint"><Loader size={12} className="spin" /> Connecting to battle server…</p>}
+            {error && (
+              <div className="pvp-error-wrap">
+                <p className="pvp-error">{error}</p>
+                <button className="btn-refresh" onClick={() => { setError(''); PvpService.connect(); }}>
+                  <Link size={12} /> Reconnect
+                </button>
+              </div>
+            )}
+            {conn && <p className="pvp-ok"><span className="ok-dot" /> Connected to battle server</p>}
           </div>
         </div>
       )}

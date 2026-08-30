@@ -1796,6 +1796,10 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .pvp-code-input:focus{ outline:none; border-color:#3b82f6; box-shadow:0 0 0 3px rgba(59,130,246,.15) }
 .pvp-hint{ display:flex; align-items:center; gap:6px; font-size:.74rem; color:var(--muted); margin-top:10px }
 .pvp-error{ font-size:.78rem; color:#dc2626; font-weight:800; margin-top:10px; text-align:center }
+.pvp-error-wrap{ display:flex; flex-direction:column; align-items:center; gap:8px; margin-top:10px }
+.pvp-error-wrap .pvp-error{ margin-top:0 }
+.pvp-ok{ display:flex; align-items:center; justify-content:center; gap:6px; font-size:.74rem; color:#16a34a; font-weight:700; margin-top:10px }
+.ok-dot{ width:8px; height:8px; border-radius:50%; background:#22c55e; box-shadow:0 0 0 3px rgba(34,197,94,.2) }
 
 .pvp-code-banner{
   display:flex; align-items:center; gap:10px; flex-wrap:wrap;
