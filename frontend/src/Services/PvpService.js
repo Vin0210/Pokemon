@@ -3,7 +3,7 @@
 const DEFAULT_URL =
   process.env.REACT_APP_WS_URL ||
   (window.location.protocol === 'https:'
-    ? 'wss://pokemon-pvp-server.up.railway.app'
+    ? 'wss://pokemon-production-550e.up.railway.app'
     : `ws://${window.location.hostname || 'localhost'}:3002`);
 
 const listeners = new Map(); // type -> Set<fn>
