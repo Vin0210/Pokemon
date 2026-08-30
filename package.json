@@ -1,0 +1,11 @@
+{
+  "name": "pokemon-pvp",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Root wrapper so Railway/Railpack builds the repo and runs the backend WebSocket battle server.",
+  "scripts": {
+    "postinstall": "cd backend && npm install",
+    "start": "node backend/ws-server.js",
+    "pvp": "node backend/ws-server.js"
+  }
+}
