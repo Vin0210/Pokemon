@@ -195,12 +195,17 @@ const makeSide = (pokemon) => {
   };
 };
 
-const createRoomState = (playerPokemon, enemyPokemon) => ({
-  player: makeSide(playerPokemon),
-  enemy: makeSide(enemyPokemon),
-  turnCount: 1,
-  winner: null,
-  started: false,
+// Team PvP: build a side holding an ordered team of members.
+const makeMember = (pokemon) => {
+  const maxHp = calcHP(pokemon.stats?.find(s => s.name === 'hp')?.base || 55);
+  return { pokemon, hp: maxHp, maxHp, moves: getMovesForTypes(pokemon.types), fainted: false };
+};
+
+const makeTeamSide = (pokemonList) => ({
+  team: pokemonList.map(makeMember),
+  active: 0,
+  locked: false,
+  ready: null,       // { kind: 'move' | 'switch', index?, name? }
 });
 
-module.exports = { createRoomState, calcDamage, rng, getStat, getEffectiveness, getMovesForTypes, MOVE_DB, Struggle };
+module.exports = { makeTeamSide, makeMember, calcDamage, calcHP, rng, getStat, getEffectiveness, getMovesForTypes, MOVE_DB, Struggle };

@@ -1848,6 +1848,48 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   .pvp-select-card img{ width:52px; height:52px }
 }
 
+/* PvP team pick helpers */
+.pvp-select-card{ position:relative }
+.pick-index{
+  position:absolute; top:6px; left:6px; z-index:3; width:22px; height:22px; border-radius:50%;
+  background:#22c55e; color:#fff; font-size:.72rem; display:flex; align-items:center; justify-content:center;
+}
+.confirm-btn{ background:#0f172a; color:#facc15; border:none; border-radius:12px; font-weight:900; cursor:pointer; transition:opacity .15s ease }
+.confirm-btn:disabled{ opacity:.5; cursor:not-allowed }
+
+/* PvP team strips (bench) */
+.team-strip{ display:flex; gap:4px; padding:4px 6px; background:rgba(15,23,42,.35); border-radius:10px; flex-wrap:wrap; justify-content:center }
+.enemy-strip{ margin-bottom:4px }
+.player-strip{ margin-bottom:4px }
+.team-strip-pip{
+  display:flex; flex-direction:column; align-items:center; gap:1px; padding:2px;
+  border-radius:8px; border:1.5px solid rgba(255,255,255,.25); min-width:40px;
+}
+.team-strip-pip img{ width:30px; height:30px; object-fit:contain; filter:grayscale(.3) }
+.team-strip-pip.active{ border-color:#facc15; background:rgba(250,204,21,.18) }
+.team-strip-pip.fainted{ opacity:.4 }
+.team-strip-pip.fainted img{ filter:grayscale(1) brightness(.6) }
+.pip-hp{ font-size:.5rem; color:#fff; font-weight:900; line-height:1 }
+
+/* PvP switch panel */
+.pvp-switch-panel{ padding:10px; text-align:center }
+.pvp-switch-list{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; margin-top:8px }
+.pvp-switch-card{
+  display:flex; flex-direction:column; align-items:center; gap:4px; padding:8px 4px;
+  border:2px solid var(--line); border-radius:12px; background:var(--surface-2); cursor:pointer;
+}
+.pvp-switch-card img{ width:46px; height:46px; object-fit:contain }
+.pvp-switch-card span{ font-weight:900; font-size:.72rem; text-transform:capitalize }
+.pvp-switch-card small{ font-size:.62rem; color:var(--muted); font-weight:700 }
+.pvp-switch-card.active{ border-color:#facc15; background:rgba(250,204,21,.12) }
+.pvp-switch-card.out{ opacity:.4; cursor:not-allowed }
+.pvp-switch-card:disabled{ cursor:not-allowed }
+@media(max-width:375px){ .pvp-switch-list{ grid-template-columns:repeat(2,minmax(0,1fr)) } }
+
+/* PvP switch control button in moves grid */
+.switch-ctl{ background:linear-gradient(180deg,#334155,#475569); color:#fff }
+.switch-ctl:hover{ filter:brightness(1.1) }
+
 /* Battle mode toggle */
 .battle-mode-toggle{ display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap }
 .battle-mode-btn{

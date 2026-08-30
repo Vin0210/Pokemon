@@ -94,6 +94,7 @@ export const PvpService = {
   join: (code) => send('join', { code }),
   choose: (pokemon) => send('choose', { pokemon }),
   move: (moveName) => send('move', { move: moveName }),
+  switch: (index) => send('switch', { index }),
   leave: () => send('leave'),
   on: (type, fn) => {
     if (!listeners.has(type)) listeners.set(type, new Set());
