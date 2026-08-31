@@ -9,7 +9,7 @@ const Header = () => {
           <div className="brand-mark" aria-hidden />
           <div className="brand-text">
             <h1>POKÉ<span>DEX</span></h1>
-            <p>Gotta Catch &apos;Em All — Interactive Lab</p>
+            <p>Gotta Catch &apos;Em All — by <b>Elvin Ramos</b></p>
           </div>
         </div>
 
